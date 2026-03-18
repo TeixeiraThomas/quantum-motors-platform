@@ -1,93 +1,509 @@
-# Groupe de chedda_i 1071539
+# SPE-CLO5 / Quantum Motors  
+## Étape 0 — Schéma d’infrastructure
 
+---
 
+## 1. Présentation du projet
 
-## Getting started
+Dans le cadre du projet **Quantum Motors**, notre équipe doit reprendre une application web existante dans une logique **DevOps** afin de moderniser une infrastructure devenue vieillissante, peu flexible et difficilement scalable.
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+Le sujet met en avant plusieurs problématiques :
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+- une infrastructure historique insuffisante face à une montée en charge
+- un versionnement ancien basé sur **SVN**
+- un besoin d’industrialisation du déploiement
+- une nécessité de séparer les environnements de travail
+- un besoin de supervision, de centralisation des logs et de validation automatisée
+- une volonté d’automatiser la mise en production à partir d’un commit sur une branche précise
 
-## Add your files
+L’objectif global est donc de concevoir une **architecture moderne, cohérente, automatisable et évolutive**, capable d’héberger le configurateur Quantum Motors dans de bonnes conditions.
 
-* [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-* [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
+Cette **étape 0** consiste à proposer un **schéma d’infrastructure complet**, fondé sur les besoins exprimés par le client, et servant de base de travail pour toutes les étapes suivantes du projet.
 
-```
-cd existing_repo
-git remote add origin https://rendu-git.etna-alternance.net/module-10269/activity-54968/group-1071539.git
-git branch -M main
-git push -uf origin main
-```
+---
 
-## Integrate with your tools
+## 2. Objectifs de l’étape 0
 
-* [Set up project integrations](https://rendu-git.etna-alternance.net/module-10269/activity-54968/group-1071539/-/settings/integrations)
+Cette première étape a pour but de :
 
-## Collaborate with your team
+- analyser le besoin fonctionnel et technique du sujet
+- identifier les composants nécessaires à l’infrastructure cible
+- définir une architecture réaliste et industrialisable
+- répartir les rôles entre les différentes machines virtuelles
+- prévoir une logique de cluster, de CI/CD, de supervision et d’automatisation
+- produire un schéma clair permettant de guider les phases de mise en œuvre futures
 
-* [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-* [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-* [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-* [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-* [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
+Cette étape est structurante, car elle conditionne la cohérence des choix techniques qui seront mis en place ensuite.
 
-## Test and Deploy
+---
 
-Use the built-in continuous integration in GitLab.
+## 3. Rappel des contraintes du sujet
 
-* [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/)
-* [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-* [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-* [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-* [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+Le sujet impose ou recommande les éléments suivants :
 
-***
+- utilisation de **Docker**
+- utilisation de **GitLab** et **GitLab-CI**
+- automatisation avec **Ansible**
+- déploiement sur un **cluster**
+- séparation entre **preprod** et **prod**
+- déploiement continu à partir d’un **commit sur une branche précise**
+- déploiement des services **frontend** et **API**
+- mise en place de **tests fonctionnels**
+- centralisation des **logs**
+- exécution des **runners GitLab-CI** sous forme de conteneurs Docker
+- exploitation des VMs mises à disposition
+- possibilité d’utiliser **Docker Swarm** ou **Kubernetes**
 
-# Editing this README
+Le livrable attendu à cette étape est un **schéma d’infrastructure cohérent** rendu dans le dépôt Git.
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+---
 
-## Suggestions for a good README
+## 4. Analyse du besoin
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+Après lecture du sujet, nous identifions les besoins majeurs suivants :
 
-## Name
-Choose a self-explaining name for your project.
+### 4.1 Besoin d’orchestration
+L’application ne doit plus être déployée manuellement sur un simple serveur isolé.  
+Il faut désormais prévoir une architecture **clusterisée**, capable de répartir et d’orchestrer plusieurs services.
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+### 4.2 Besoin de séparation des environnements
+L’entreprise souhaite une logique **multi-environnement**, avec au minimum :
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+- un environnement **preprod**
+- un environnement **prod**
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+Cette séparation est indispensable pour tester les évolutions avant mise en production.
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+### 4.3 Besoin d’intégration continue et de déploiement continu
+L’infrastructure doit permettre, à partir d’un commit sur une branche donnée :
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+- le lancement automatique des pipelines
+- la construction des images Docker
+- l’exécution des tests
+- le déploiement sur l’environnement cible
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+### 4.4 Besoin de supervision et d’observabilité
+Le sujet mentionne explicitement la nécessité de rediriger les logs vers un serveur de traitement.  
+Il faut donc prévoir une solution de collecte et de consultation des journaux d’exécution.
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+### 4.5 Besoin d’automatisation
+La mise en place du cluster, des outils DevOps et des services doit être automatisée à l’aide d’**Ansible** afin de garantir la reproductibilité de l’infrastructure.
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+### 4.6 Besoin de cohérence avec les technologies fournies
+L’application fournie s’appuie sur une architecture web classique avec :
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+- un **frontend**
+- une **API**
+- une **base de données**
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+Le schéma doit donc représenter explicitement ces composants et leurs relations.
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+---
 
-## License
-For open source projects, say how it is licensed.
+## 5. Choix d’architecture
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+---
+
+## 5.1 Choix de l’orchestrateur : Docker Swarm
+
+Le sujet autorise le choix entre **Docker Swarm** et **Kubernetes**.
+
+Dans le cadre de ce POC, nous avons choisi **Docker Swarm** pour les raisons suivantes :
+
+- mise en place plus simple et plus rapide
+- administration plus légère dans un environnement de taille réduite
+- bonne intégration avec l’écosystème Docker
+- cohérence avec l’objectif de démonstration DevOps
+- adaptation au nombre limité de machines disponibles
+- simplicité d’automatisation avec Ansible
+
+Kubernetes aurait été envisageable, mais représenterait une complexité supplémentaire peu pertinente pour cette étape de cadrage et pour un POC réalisé dans un temps limité.
+
+### Conclusion sur ce choix
+**Docker Swarm** représente ici le meilleur compromis entre :
+- simplicité
+- clarté d’architecture
+- faisabilité
+- cohérence technique
+
+---
+
+## 5.2 Choix de la plateforme DevOps : GitLab
+
+Nous retenons **GitLab CE privé** pour centraliser :
+
+- le code source
+- les branches
+- les pipelines CI/CD
+- le registre d’images Docker
+- les automatisations de build et de déploiement
+
+Ce choix est cohérent avec le sujet, qui impose explicitement GitLab et GitLab-CI.
+
+---
+
+## 5.3 Choix de la solution de logs
+
+Pour répondre au besoin de centralisation des journaux d’exécution, nous retenons une pile légère et adaptée à un POC :
+
+- **Promtail** pour la collecte
+- **Loki** pour le stockage
+- **Grafana** pour la visualisation
+
+Ce choix permet :
+- une mise en place plus simple que des stacks plus lourdes
+- une bonne intégration avec les logs conteneurisés
+- une visualisation claire pour le debug et la supervision
+
+---
+
+## 5.4 Choix de l’organisation réseau
+
+L’architecture sépare logiquement les environnements applicatifs à travers :
+
+- un réseau **preprod_net**
+- un réseau **prod_net**
+
+Cette séparation facilite :
+- l’isolation logique
+- la lisibilité de l’architecture
+- la maîtrise des flux entre services
+- la préparation de règles de sécurité plus strictes pour la suite du projet
+
+---
+
+## 6. Architecture générale proposée
+
+L’architecture cible s’articule autour de **quatre machines virtuelles** :
+
+- **VM1** : point central du cluster, reverse proxy et rôle de manager
+- **VM2** : nœud worker participant à l’environnement preprod
+- **VM3** : nœud worker participant à l’environnement prod
+- **VM4** : outils DevOps, CI/CD, tests et services transverses
+
+L’ensemble repose sur un **cluster Docker Swarm** permettant de piloter les services applicatifs déployés en conteneurs.
+
+Les utilisateurs accèdent à la plateforme via un **reverse proxy / ingress**, qui oriente les requêtes vers l’environnement approprié selon le domaine utilisé.
+
+Les déploiements sont pilotés par **GitLab CI/CD**, via des **GitLab Runner(s) Docker**, capables d’exécuter les pipelines de build, de test et de déploiement.
+
+Les logs sont collectés de manière centralisée, et les tests d’intégration / fonctionnels sont intégrés au cycle CI/CD.
+
+---
+
+## 7. Répartition des rôles par VM
+
+---
+
+## 7.1 VM1 — Docker Swarm Manager + Reverse Proxy / Ingress
+
+### Rôle principal
+La VM1 joue un rôle central dans l’infrastructure.  
+Elle héberge :
+
+- le **manager Docker Swarm**
+- le **reverse proxy / ingress**
+- le point d’entrée principal du trafic utilisateur
+
+### Responsabilités
+- initialisation et gestion du cluster Swarm
+- supervision logique des services déployés
+- réception du trafic entrant
+- routage des requêtes vers les bons services frontend
+- préparation à l’exposition future sécurisée en HTTPS
+
+### Intérêt architectural
+Cette VM centralise la logique de pilotage du cluster ainsi que l’exposition des services, ce qui simplifie la lisibilité du schéma et la gestion globale de la plateforme.
+
+---
+
+## 7.2 VM2 — Docker Swarm Worker
+
+### Rôle principal
+La VM2 participe au cluster en tant que **worker**.
+
+### Responsabilités
+- hébergement des conteneurs liés à l’environnement **preprod**
+- exécution des services applicatifs assignés par l’orchestrateur
+- participation à la répartition de charge du cluster
+
+### Services concernés
+- Frontend Preprod
+- API Preprod
+- éventuellement composants complémentaires selon les besoins futurs
+
+---
+
+## 7.3 VM3 — Docker Swarm Worker
+
+### Rôle principal
+La VM3 participe également au cluster en tant que **worker**.
+
+### Responsabilités
+- hébergement des conteneurs liés à l’environnement **prod**
+- exécution des services applicatifs assignés par l’orchestrateur
+- participation à l’architecture distribuée du cluster
+
+### Services concernés
+- Frontend Prod
+- API Prod
+- éventuellement composants complémentaires selon la stratégie de placement des services
+
+---
+
+## 7.4 VM4 — Outils DevOps
+
+### Rôle principal
+La VM4 regroupe l’ensemble des briques DevOps nécessaires au cycle de livraison continue.
+
+### Services hébergés
+- **GitLab CE privé**
+- **GitLab Runner(s) Docker**
+- **Container Registry GitLab**
+- **Tests d’intégration / fonctionnels**
+
+### Responsabilités
+- hébergement des dépôts source
+- exécution des pipelines CI/CD
+- construction et stockage des images Docker
+- lancement des tests automatiques
+- déclenchement des déploiements vers le cluster
+
+### Intérêt architectural
+Isoler ces outils sur une VM dédiée améliore :
+- la lisibilité
+- la séparation des responsabilités
+- la maintenabilité
+- la cohérence DevOps de l’architecture
+
+---
+
+## 8. Organisation des environnements
+
+L’infrastructure distingue explicitement deux environnements :
+
+---
+
+## 8.1 Environnement Preprod
+
+### Objectif
+La preproduction sert à :
+- valider les nouvelles versions
+- exécuter les tests d’intégration / tests fonctionnels
+- vérifier le comportement de l’application avant déploiement en production
+
+### Services déployés
+- **Frontend Preprod**
+- **API Preprod**
+- **MariaDB Preprod**
+
+### Accès
+Exemple de domaine :
+- `preprod.quantum-motors.local`
+
+### Intérêt
+Cet environnement permet d’éviter toute mise en production directe d’une version non validée.
+
+---
+
+## 8.2 Environnement Prod
+
+### Objectif
+La production héberge la version stable et validée de l’application.
+
+### Services déployés
+- **Frontend Prod**
+- **API Prod**
+- **MariaDB Prod**
+
+### Accès
+Exemple de domaine :
+- `prod.quantum-motors.local`
+
+### Intérêt
+Cet environnement représente la version finale accessible aux utilisateurs.
+
+---
+
+## 9. Flux applicatifs
+
+Les flux logiques sont les suivants :
+
+### 9.1 Flux utilisateur
+Les utilisateurs accèdent à l’application via :
+- `preprod.quantum-motors.local`
+- `prod.quantum-motors.local`
+
+Ces flux arrivent sur le **Reverse Proxy / Ingress**, qui redirige les requêtes vers le frontend correspondant.
+
+### 9.2 Flux applicatifs
+Pour chaque environnement :
+- le **frontend** communique avec l’**API**
+- l’**API** communique avec la **base MariaDB**
+
+Ce modèle s’applique à la fois à **preprod** et à **prod**.
+
+### 9.3 Flux CI/CD
+Les développeurs poussent leur code dans GitLab.  
+Le pipeline est ensuite déclenché automatiquement selon la branche visée.
+
+### 9.4 Flux de logs
+Les services applicatifs envoient leurs logs vers la brique de collecte, qui les centralise dans **Loki** et les rend consultables via **Grafana**.
+
+---
+
+## 10. Chaîne CI/CD prévue
+
+L’un des objectifs majeurs du sujet est de permettre un déploiement continu à partir d’un commit sur une branche précise.
+
+Nous avons donc prévu la logique suivante :
+
+---
+
+## 10.1 Branche `develop`
+
+Un commit sur la branche `develop` déclenche :
+
+1. récupération du code source
+2. exécution du pipeline CI/CD
+3. build des images Docker
+4. exécution des tests d’intégration / fonctionnels
+5. déploiement automatique en **Preprod**
+
+### Objectif
+Valider les évolutions avant promotion éventuelle en production.
+
+---
+
+## 10.2 Branche `main`
+
+Un commit sur la branche `main` déclenche :
+
+1. récupération du code source
+2. exécution du pipeline CI/CD
+3. build des images Docker
+4. exécution des validations nécessaires
+5. déploiement automatique en **Prod**
+
+### Objectif
+Mettre en ligne une version maîtrisée et validée de l’application.
+
+---
+
+## 10.3 Rôle des GitLab Runner(s)
+
+Les **GitLab Runner(s) Docker** sont responsables de :
+
+- l’exécution des jobs CI/CD
+- la construction des images
+- l’exécution des tests
+- l’interaction avec le registry
+- le déclenchement du déploiement sur le cluster
+
+Ils constituent donc le lien opérationnel entre :
+- le code source
+- les tests
+- les images Docker
+- l’environnement de déploiement
+
+---
+
+## 11. Gestion des logs et observabilité
+
+Le sujet précise que les logs d’exécution doivent pouvoir être redirigés vers un serveur de traitement.
+
+Nous prévoyons donc une brique de **collecte centralisée des logs**.
+
+### Solution retenue
+- **Promtail** : collecte des logs
+- **Loki** : stockage
+- **Grafana** : visualisation
+
+### Objectifs couverts
+- consultation centralisée des journaux
+- diagnostic simplifié en cas d’erreur
+- aide au suivi du fonctionnement applicatif
+- préparation à une supervision plus avancée
+
+Cette brique ne se limite pas à une exigence technique : elle répond à un besoin opérationnel réel dans une logique de production industrialisée.
+
+---
+
+## 12. Tests d’intégration / fonctionnels
+
+Le sujet demande explicitement la mise en place de tests fonctionnels dans les dépôts de l’application.
+
+Notre architecture intègre donc une phase de test au sein du pipeline CI/CD.
+
+### Types de tests prévus
+- **tests d’intégration**
+- **tests fonctionnels**
+
+### Objectifs
+- vérifier la cohérence des composants
+- valider le bon comportement de l’application
+- détecter les régressions avant déploiement
+- sécuriser les mises en production
+
+### Positionnement dans l’architecture
+Les tests sont exécutés via les **GitLab Runner(s)** et participent à la validation avant déploiement sur l’environnement cible.
+
+---
+
+## 13. Place d’Ansible dans la suite du projet
+
+Même si cette étape porte principalement sur le schéma d’infrastructure, notre architecture est pensée pour être automatisée ensuite avec **Ansible**.
+
+### Ansible sera utilisé pour :
+- installer Docker sur les VMs
+- configurer les prérequis système
+- initialiser le cluster Swarm
+- joindre les workers au cluster
+- déployer les composants nécessaires
+- préparer les fichiers de configuration
+- industrialiser la mise en place de l’infrastructure
+
+### Intérêt
+Ce choix garantit :
+- la reproductibilité
+- la réduction des actions manuelles
+- la cohérence entre les environnements
+- une vraie logique DevOps
+
+---
+
+## 14. Justification globale des choix
+
+Notre proposition d’architecture répond aux besoins du sujet pour plusieurs raisons :
+
+### Simplicité
+Le choix de Docker Swarm permet de conserver une architecture lisible et réaliste pour un POC.
+
+### Séparation des environnements
+La distinction entre **preprod** et **prod** permet de sécuriser le cycle de livraison.
+
+### Industrialisation
+L’intégration de GitLab CI/CD, des runners, du registry et d’Ansible prépare une vraie chaîne de déploiement continue.
+
+### Observabilité
+La collecte centralisée des logs permet de répondre à un besoin opérationnel indispensable.
+
+### Cohérence
+Chaque composant représenté dans le schéma a un rôle précis et directement lié aux attentes du sujet.
+
+---
+
+## 15. Contenu du livrable
+
+Pour cette étape 0, nous rendons :
+
+- un **schéma d’infrastructure au format image**
+- un **fichier source modifiable du schéma**
+- ce **README explicatif**
+
+### Arborescence du dépôt
+```text
+README.md
+docs/
+├── etape-0-schema-infrastructure-quantum-motors.png
+└── etape-0-schema-infrastructure-quantum-motors.drawio
