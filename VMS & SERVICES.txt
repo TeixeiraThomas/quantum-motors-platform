@@ -1,0 +1,25 @@
+VM / user / mot de passe :
+
+TIC-CLO5-VM1 — 172.16.248.64
+user : teixei_t
+mdp : jpVxCd5xW74l
+TIC-CLO5-VM2 — 172.16.248.92
+user : teixei_t
+mdp : 36WDSh4EWD9o
+TIC-CLO5-VM3 — 172.16.248.97
+user : touahr_s
+mdp : 0xgZ7PdiFZ86
+TIC-CLO5-VM4 — 172.16.248.236
+user : touahr_s
+mdp : a80turnT0eUz
+
+http://172.16.248.64:9000 
+user : admin
+mdp : etna
+
+http://172.16.248.236
+root
+
+3DFNz/wBTNkDd4iG+SFvys1nfo3uqcaP/8rz9JEfn6M=
+
+S3%vbB&0D3Yh5$

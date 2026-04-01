@@ -1,0 +1,5 @@
+- name: Deploy GitLab on VM4
+  hosts: gitlab
+  become: true
+  roles:
+    - install_gitlab

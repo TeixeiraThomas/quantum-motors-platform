@@ -1,0 +1,17 @@
+docker_packages:
+  - docker.io
+  - python3-docker
+
+swarm_advertise_addr: 172.16.248.64
+
+overlay_networks:
+  - preprod_net
+  - prod_net
+
+sonarqube_service_name: sonarqube
+sonarqube_image: sonarqube:lts-community
+sonarqube_port: 9000
+sonarqube_target_node: TIC-CLO5-VM3
+
+gitlab_external_url: "http://172.16.248.236"
+gitlab_registry_url: "http://172.16.248.236:5050"

@@ -1,0 +1,11 @@
+- name: Deploy Docker Swarm cluster
+  hosts: swarm_managers:swarm_workers
+  become: true
+  roles:
+    - docker_swarm
+
+- name: Deploy SonarQube
+  hosts: swarm_managers
+  become: true
+  roles:
+    - SonarQube

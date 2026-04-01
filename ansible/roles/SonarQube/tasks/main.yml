@@ -1,0 +1,16 @@
+- name: Check if SonarQube service already exists
+  shell: docker service ls --format '{% raw %}{{.Name}}{% endraw %}' | grep -w {{ sonarqube_service_name }}
+  register: sonar_exists
+  changed_when: false
+  failed_when: false
+
+- name: Deploy SonarQube service
+  shell: |
+    docker service create \
+      --name {{ sonarqube_service_name }} \
+      --constraint 'node.hostname=={{ sonarqube_target_node }}' \
+      --publish {{ sonarqube_port }}:9000 \
+      --limit-memory 2G \
+      --limit-cpu 1 \
+      {{ sonarqube_image }}
+  when: sonar_exists.rc != 0
