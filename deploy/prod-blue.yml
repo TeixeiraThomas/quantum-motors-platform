@@ -1,22 +1,6 @@
 version: "3.9"
 
 services:
-  mariadb-prod:
-    image: mariadb:11
-    environment:
-      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
-      MARIADB_DATABASE: quantum_motors
-      MARIADB_USER: quantum
-      MARIADB_PASSWORD: ${DB_PASSWORD}
-    volumes:
-      - mariadb_prod_data:/var/lib/mysql
-    networks:
-      - prod_net
-    deploy:
-      placement:
-        constraints:
-          - node.hostname == TIC-CLO5-VM2
-
   api-prod-blue:
     image: ${CI_REGISTRY_IMAGE}/backend:${IMAGE_TAG}
     environment:
@@ -30,8 +14,6 @@ services:
     networks:
       - prod_net
       - public
-    depends_on:
-      - mariadb-prod
     deploy:
       labels:
         - traefik.enable=true
@@ -42,16 +24,13 @@ services:
   front-prod-blue:
     image: ${CI_REGISTRY_IMAGE}/frontend:${IMAGE_TAG}
     environment:
-      NEXT_PUBLIC_API_URL: http://api-blue.quantum.local
-      NEXT_PUBLIC_DISPLAY_REACT_QUERY_DEBUGGER: "false"
+      API_URL_INTERNAL: http://api-prod-blue:3000
       HOST: 0.0.0.0
       PORT: 4200
       NODE_ENV: production
     networks:
       - prod_net
       - public
-    depends_on:
-      - api-prod-blue
     deploy:
       labels:
         - traefik.enable=true
@@ -66,6 +45,3 @@ networks:
   public:
     external: true
     name: public
-
-volumes:
-  mariadb_prod_data:

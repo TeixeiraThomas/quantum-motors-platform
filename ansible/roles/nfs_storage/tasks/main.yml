@@ -1,0 +1,46 @@
+- name: Install NFS server packages on the primary manager
+  ansible.builtin.apt:
+    name:
+      - nfs-common
+      - nfs-kernel-server
+    state: present
+    update_cache: true
+  when: inventory_hostname == groups["swarm_managers"][0]
+
+- name: Install NFS client packages on swarm nodes
+  ansible.builtin.apt:
+    name:
+      - nfs-common
+    state: present
+    update_cache: true
+  when: inventory_hostname != groups["swarm_managers"][0]
+
+- name: Create NFS export directories
+  ansible.builtin.file:
+    path: "{{ nfs_exports_root }}/{{ item }}"
+    state: directory
+    owner: nobody
+    group: nogroup
+    mode: "0777"
+  loop: "{{ nfs_export_directories }}"
+  when: inventory_hostname == groups["swarm_managers"][0]
+
+- name: Configure NFS exports
+  ansible.builtin.blockinfile:
+    path: /etc/exports
+    marker: "# {mark} ANSIBLE QUANTUM MOTORS NFS"
+    block: |
+      {% for export_dir in nfs_export_directories %}
+      {{ nfs_exports_root }}/{{ export_dir }} {{ nfs_allowed_cidr }}(rw,sync,no_subtree_check,no_root_squash)
+      {% endfor %}
+  when: inventory_hostname == groups["swarm_managers"][0]
+  notify:
+    - Reload NFS exports
+    - Restart NFS server
+
+- name: Ensure NFS server is enabled and started
+  ansible.builtin.service:
+    name: nfs-kernel-server
+    state: started
+    enabled: true
+  when: inventory_hostname == groups["swarm_managers"][0]

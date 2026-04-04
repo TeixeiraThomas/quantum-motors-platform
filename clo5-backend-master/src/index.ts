@@ -2,13 +2,14 @@ import { existsSync } from "fs";
 import { resolve } from "path";
 import cors from "cors";
 import { configDotenv } from "dotenv";
-import express from "express";
+import express, { NextFunction, Request, Response } from "express";
 import { BatteryRouter } from "./Router/BatteryRouter";
 import { CarRouter } from "./Router/CarRouter";
 import { ColorRouter } from "./Router/ColorRouter";
 import { FinishRouter } from "./Router/FinishRouter";
 import { ModelRouter } from "./Router/ModelRouter";
 import { ServiceRouter } from "./Router/ServiceRouter";
+import { logError, logInfo } from "./Utils/logger";
 
 /**
  * Start Express server.
@@ -49,9 +50,22 @@ async function startServer() {
     origin: process.env.CORS_ORIGIN,
   };
 
-  // Then pass these options to cors:
   app.use(cors(options));
   app.use(express.json());
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    const requestStartedAt = Date.now();
+
+    res.on("finish", () => {
+      logInfo("request.completed", {
+        method: req.method,
+        path: req.originalUrl,
+        statusCode: res.statusCode,
+        durationMs: Date.now() - requestStartedAt,
+      });
+    });
+
+    next();
+  });
   app.use(ModelRouter.init());
   app.use(FinishRouter.init());
   app.use(BatteryRouter.init());
@@ -61,10 +75,16 @@ async function startServer() {
 
   try {
     await app.listen({ port: portAssigned, host: hostAssigned });
-    console.log(`🚀 Server ready at //${hostAssigned}:${portAssigned}`);
+    logInfo("server.ready", {
+      host: hostAssigned,
+      port: portAssigned,
+    });
   } catch (err) {
-    console.log("Failed to start server");
-    console.log(err);
+    const error = err as Error;
+
+    logError("server.start_failed", {
+      error: error.message,
+    });
     process.exit(1);
   }
 }

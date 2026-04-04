@@ -1,0 +1,176 @@
+stages:
+  - test
+  - build
+  - deploy_preprod
+  - test_preprod
+  - deploy_green
+  - test_green
+  - switch_prod
+
+variables:
+  BACKEND_IMAGE: $CI_REGISTRY_IMAGE/backend
+  FRONTEND_IMAGE: $CI_REGISTRY_IMAGE/frontend
+  IMAGE_TAG: $CI_COMMIT_SHORT_SHA
+  DOCKER_TLS_CERTDIR: ""
+  SWARM_MANAGER_IP: 172.16.248.64
+  NFS_SERVER: 172.16.248.64
+  NFS_EXPORTS_ROOT: /srv/nfs/quantum-motors
+
+default:
+  tags:
+    - docker
+
+.docker_job:
+  image: docker:24.0.7-cli
+  before_script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+
+test_backend:
+  stage: test
+  image: node:20-bookworm-slim
+  services:
+    - name: mariadb:11
+      alias: mysql
+      variables:
+        MARIADB_ROOT_PASSWORD: root
+        MARIADB_DATABASE: quantum_motors
+  script:
+    - cd clo5-backend-master
+    - apt-get update
+    - apt-get install -y --no-install-recommends openssl
+    - corepack enable
+    - yarn install --immutable
+    - cp .env.test.example .env.test
+    - sed -i 's|mysql://quantum:quantum@127.0.0.1:3306/quantum_motors_test|mysql://root:root@mysql:3306/quantum_motors|' .env.test
+    - yarn test
+
+lint_backend:
+  stage: test
+  image: node:20-bookworm-slim
+  script:
+    - cd clo5-backend-master
+    - corepack enable
+    - yarn install --immutable
+    - yarn lint
+
+lint_front:
+  stage: test
+  image: node:18-bookworm-slim
+  script:
+    - cd clo5-front-main
+    - corepack enable
+    - yarn install --frozen-lockfile
+    - yarn lint
+
+build_backend:
+  stage: build
+  extends: .docker_job
+  needs:
+    - test_backend
+    - lint_backend
+  script:
+    - docker build --pull -t "$BACKEND_IMAGE:$IMAGE_TAG" ./clo5-backend-master
+    - docker push "$BACKEND_IMAGE:$IMAGE_TAG"
+
+build_frontend:
+  stage: build
+  extends: .docker_job
+  needs:
+    - lint_front
+  script:
+    - docker build --pull --build-arg NEXT_PUBLIC_API_URL=/api -t "$FRONTEND_IMAGE:$IMAGE_TAG" ./clo5-front-main
+    - docker push "$FRONTEND_IMAGE:$IMAGE_TAG"
+
+deploy_preprod:
+  stage: deploy_preprod
+  extends: .docker_job
+  tags:
+    - swarm-manager
+  needs:
+    - build_backend
+    - build_frontend
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH == "main"'
+  script:
+    - export DB_ROOT_PASSWORD="$PREPROD_DB_ROOT_PASSWORD"
+    - export DB_PASSWORD="$PREPROD_DB_PASSWORD"
+    - export ADMIN_PASSWORD="$BACKEND_ADMIN_PASSWORD"
+    - docker stack deploy --with-registry-auth -c deploy/preprod.yml preprod
+
+test_preprod:
+  stage: test_preprod
+  image: curlimages/curl:8.7.1
+  tags:
+    - swarm-manager
+  needs:
+    - deploy_preprod
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH == "main"'
+  script:
+    - sh tests/functional/smoke.sh "http://$SWARM_MANAGER_IP" preprod.quantum.local api-preprod.quantum.local
+
+bootstrap_prod_blue:
+  stage: deploy_green
+  extends: .docker_job
+  tags:
+    - swarm-manager
+  needs:
+    - build_backend
+    - build_frontend
+  when: manual
+  allow_failure: true
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  script:
+    - export DB_ROOT_PASSWORD="$PROD_DB_ROOT_PASSWORD"
+    - export DB_PASSWORD="$PROD_DB_PASSWORD"
+    - export ADMIN_PASSWORD="$BACKEND_ADMIN_PASSWORD"
+    - docker stack deploy --with-registry-auth -c deploy/prod-db.yml prod-db
+    - docker stack deploy --with-registry-auth -c deploy/prod-blue-live.yml prod-live
+
+deploy_green:
+  stage: deploy_green
+  extends: .docker_job
+  tags:
+    - swarm-manager
+  needs:
+    - test_preprod
+    - build_backend
+    - build_frontend
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  script:
+    - export DB_ROOT_PASSWORD="$PROD_DB_ROOT_PASSWORD"
+    - export DB_PASSWORD="$PROD_DB_PASSWORD"
+    - export ADMIN_PASSWORD="$BACKEND_ADMIN_PASSWORD"
+    - docker stack deploy --with-registry-auth -c deploy/prod-db.yml prod-db
+    - docker stack deploy --with-registry-auth -c deploy/prod-green.yml prodgreen
+
+test_green:
+  stage: test_green
+  image: curlimages/curl:8.7.1
+  tags:
+    - swarm-manager
+  needs:
+    - deploy_green
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  script:
+    - sh tests/functional/smoke.sh "http://$SWARM_MANAGER_IP" front-green.quantum.local api-green.quantum.local
+
+switch_prod:
+  stage: switch_prod
+  extends: .docker_job
+  tags:
+    - swarm-manager
+  needs:
+    - test_green
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  script:
+    - export DB_PASSWORD="$PROD_DB_PASSWORD"
+    - export ADMIN_PASSWORD="$BACKEND_ADMIN_PASSWORD"
+    - docker stack deploy --with-registry-auth -c deploy/prod-green-live.yml prod-live
+    - docker stack rm prodgreen || true
+    - apk add --no-cache curl
+    - sh tests/functional/smoke.sh "http://$SWARM_MANAGER_IP" front.quantum.local api.quantum.local

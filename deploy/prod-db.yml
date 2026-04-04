@@ -1,0 +1,40 @@
+version: "3.9"
+
+services:
+  mariadb-prod:
+    image: mariadb:11
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MARIADB_DATABASE: quantum_motors
+      MARIADB_USER: quantum
+      MARIADB_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - mariadb_prod_data:/var/lib/mysql
+    configs:
+      - source: mariadb_seed_sql
+        target: /docker-entrypoint-initdb.d/01-init.sql
+    networks:
+      prod_net:
+        aliases:
+          - mariadb-prod
+    deploy:
+      placement:
+        constraints:
+          - node.hostname == TIC-CLO5-VM2
+
+networks:
+  prod_net:
+    external: true
+    name: prod_net
+
+volumes:
+  mariadb_prod_data:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=${NFS_SERVER},nfsvers=4,soft,rw
+      device: ":${NFS_EXPORTS_ROOT}/prod/mariadb"
+
+configs:
+  mariadb_seed_sql:
+    file: ../clo5-backend-master/quantum-motors-initial.sql

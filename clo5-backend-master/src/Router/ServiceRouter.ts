@@ -1,3 +1,4 @@
+import { logError } from "../Utils/logger";
 import { PrismaConnection } from "../Utils/PrismaConnection";
 import { BaseRouter } from "./BaseRouter";
 import { RouterInterface } from "./RouterInterface";
@@ -24,7 +25,9 @@ export class ServiceRouter extends BaseRouter implements RouterInterface {
         })
         .catch((e) => {
           res.status(500).send("Database KO");
-          console.error("Prisma connection failed: " + e.message);
+          logError("healthcheck.database_failed", {
+            error: e.message,
+          });
         });
     });
   }

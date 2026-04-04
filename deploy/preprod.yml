@@ -10,6 +10,9 @@ services:
       MARIADB_PASSWORD: ${DB_PASSWORD}
     volumes:
       - mariadb_preprod_data:/var/lib/mysql
+    configs:
+      - source: mariadb_seed_sql
+        target: /docker-entrypoint-initdb.d/01-init.sql
     networks:
       - preprod_net
     deploy:
@@ -30,8 +33,6 @@ services:
     networks:
       - preprod_net
       - public
-    depends_on:
-      - mariadb-preprod
     deploy:
       labels:
         - traefik.enable=true
@@ -42,16 +43,13 @@ services:
   front-preprod:
     image: ${CI_REGISTRY_IMAGE}/frontend:${IMAGE_TAG}
     environment:
-      NEXT_PUBLIC_API_URL: http://api-preprod.quantum.local
-      NEXT_PUBLIC_DISPLAY_REACT_QUERY_DEBUGGER: "false"
+      API_URL_INTERNAL: http://api-preprod:3000
       HOST: 0.0.0.0
       PORT: 4200
       NODE_ENV: production
     networks:
       - preprod_net
       - public
-    depends_on:
-      - api-preprod
     deploy:
       labels:
         - traefik.enable=true
@@ -69,3 +67,12 @@ networks:
 
 volumes:
   mariadb_preprod_data:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=${NFS_SERVER},nfsvers=4,soft,rw
+      device: ":${NFS_EXPORTS_ROOT}/preprod/mariadb"
+
+configs:
+  mariadb_seed_sql:
+    file: ../clo5-backend-master/quantum-motors-initial.sql

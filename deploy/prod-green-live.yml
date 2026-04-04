@@ -1,0 +1,53 @@
+version: "3.9"
+
+services:
+  api-prod-green:
+    image: ${CI_REGISTRY_IMAGE}/backend:${IMAGE_TAG}
+    environment:
+      DATABASE_URL: mysql://quantum:${DB_PASSWORD}@mariadb-prod:3306/quantum_motors
+      PORT: 3000
+      HOST: 0.0.0.0
+      CORS_ORIGIN: http://front.quantum.local
+      CAR_SERVICE_IMAGE_URL: http://api.quantum.local
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      NODE_ENV: production
+    networks:
+      - prod_net
+      - public
+    deploy:
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.api-green.rule=Host(`api-green.quantum.local`)
+        - traefik.http.routers.api-green.entrypoints=web
+        - traefik.http.services.api-green.loadbalancer.server.port=3000
+        - traefik.http.routers.api-live-green.rule=Host(`api.quantum.local`)
+        - traefik.http.routers.api-live-green.entrypoints=web
+        - traefik.http.services.api-live-green.loadbalancer.server.port=3000
+
+  front-prod-green:
+    image: ${CI_REGISTRY_IMAGE}/frontend:${IMAGE_TAG}
+    environment:
+      API_URL_INTERNAL: http://api-prod-green:3000
+      HOST: 0.0.0.0
+      PORT: 4200
+      NODE_ENV: production
+    networks:
+      - prod_net
+      - public
+    deploy:
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.front-green.rule=Host(`front-green.quantum.local`)
+        - traefik.http.routers.front-green.entrypoints=web
+        - traefik.http.services.front-green.loadbalancer.server.port=4200
+        - traefik.http.routers.front-live-green.rule=Host(`front.quantum.local`)
+        - traefik.http.routers.front-live-green.entrypoints=web
+        - traefik.http.services.front-live-green.loadbalancer.server.port=4200
+
+networks:
+  prod_net:
+    external: true
+    name: prod_net
+  public:
+    external: true
+    name: public

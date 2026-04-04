@@ -4,14 +4,17 @@ services:
   traefik:
     image: traefik:v2.11
     command:
-      - --api.insecure=true
+      - --api.dashboard=true
       - --providers.docker=true
       - --providers.docker.swarmMode=true
       - --providers.docker.exposedbydefault=false
       - --entrypoints.web.address=:80
+      - --accesslog=true
+      - --accesslog.format=json
+      - --log.level=INFO
+      - --log.format=json
     ports:
       - "80:80"
-      - "8080:8080"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
@@ -20,6 +23,11 @@ services:
       placement:
         constraints:
           - node.role == manager
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.traefik-dashboard.rule=Host(`traefik.quantum.local`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))
+        - traefik.http.routers.traefik-dashboard.entrypoints=web
+        - traefik.http.routers.traefik-dashboard.service=api@internal
 
 networks:
   public:

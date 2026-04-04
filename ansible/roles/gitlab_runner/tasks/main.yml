@@ -11,10 +11,26 @@
     state: directory
     mode: "0755"
 
+- name: Create runner cache directory
+  ansible.builtin.file:
+    path: /srv/gitlab-runner-cache
+    state: directory
+    mode: "0755"
+
 - name: Check whether the runner is already registered
   ansible.builtin.stat:
     path: /srv/gitlab-runner/config.toml
   register: gitlab_runner_config
+
+- name: Build runner tag list
+  ansible.builtin.set_fact:
+    gitlab_runner_effective_tags: >-
+      {{
+        (
+          gitlab_runner_tags
+          + ((inventory_hostname in groups["swarm_managers"]) | ternary(["swarm-manager"], ["swarm-worker"]))
+        ) | unique
+      }}
 
 - name: Register runner using a one-shot container
   community.docker.docker_container:
@@ -36,14 +52,17 @@
       - --description
       - "{{ inventory_hostname }}-runner"
       - --tag-list
-      - "{{ gitlab_runner_tags | join(',') }}"
+      - "{{ gitlab_runner_effective_tags | join(',') }}"
       - --run-untagged=true
       - --locked=false
       - --docker-privileged=true
       - --docker-volumes
       - /var/run/docker.sock:/var/run/docker.sock
+      - --docker-volumes
+      - /cache
     volumes:
       - /srv/gitlab-runner:/etc/gitlab-runner
+      - /srv/gitlab-runner-cache:/cache
   when: not gitlab_runner_config.stat.exists
   no_log: true
 
@@ -55,4 +74,5 @@
     restart_policy: always
     volumes:
       - /srv/gitlab-runner:/etc/gitlab-runner
+      - /srv/gitlab-runner-cache:/cache
       - /var/run/docker.sock:/var/run/docker.sock

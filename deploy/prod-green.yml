@@ -24,16 +24,13 @@ services:
   front-prod-green:
     image: ${CI_REGISTRY_IMAGE}/frontend:${IMAGE_TAG}
     environment:
-      NEXT_PUBLIC_API_URL: http://api-green.quantum.local
-      NEXT_PUBLIC_DISPLAY_REACT_QUERY_DEBUGGER: "false"
+      API_URL_INTERNAL: http://api-prod-green:3000
       HOST: 0.0.0.0
       PORT: 4200
       NODE_ENV: production
     networks:
       - prod_net
       - public
-    depends_on:
-      - api-prod-green
     deploy:
       labels:
         - traefik.enable=true

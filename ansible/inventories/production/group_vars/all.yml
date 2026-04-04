@@ -3,8 +3,17 @@ docker_packages:
   - python3-docker
 
 overlay_networks:
+  - public
   - preprod_net
   - prod_net
+
+nfs_exports_root: /srv/nfs/quantum-motors
+nfs_export_directories:
+  - preprod/mariadb
+  - prod/mariadb
+nfs_allowed_cidr: 172.16.248.0/24
+
+traefik_stack_name: traefik
 
 sonarqube_service_name: sonarqube
 sonarqube_image: sonarqube:lts-community
@@ -22,6 +31,7 @@ sonarqube_mounts:
 
 gitlab_external_url: "http://172.16.248.236"
 gitlab_registry_url: "http://172.16.248.236:5050"
+gitlab_runner_registration_token: "{{ vault_gitlab_runner_registration_token | default('') }}"
 
 gitlab_admin_users:
   - username: rafina_d

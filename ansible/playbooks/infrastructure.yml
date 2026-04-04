@@ -3,6 +3,13 @@
   become: true
   roles:
     - docker_swarm
+    - nfs_storage
+
+- name: Deploy Traefik
+  hosts: swarm_managers
+  become: true
+  roles:
+    - traefik
 
 - name: Deploy SonarQube
   hosts: swarm_managers

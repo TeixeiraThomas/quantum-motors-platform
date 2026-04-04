@@ -9,7 +9,7 @@ RUN yarn install --frozen-lockfile
 
 COPY . .
 
-ARG NEXT_PUBLIC_API_URL=http://api-preprod.quantum.local
+ARG NEXT_PUBLIC_API_URL=/api
 ARG NEXT_PUBLIC_DISPLAY_REACT_QUERY_DEBUGGER=false
 
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL

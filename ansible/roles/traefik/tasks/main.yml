@@ -1,0 +1,29 @@
+- name: Install Traefik stack Python dependencies
+  ansible.builtin.apt:
+    name:
+      - python3-jsondiff
+    state: present
+    update_cache: true
+
+- name: Ensure Traefik stack directory exists
+  ansible.builtin.file:
+    path: /opt/quantum-motors/deploy
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Copy Traefik stack definition
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../../deploy/traefik.yml"
+    dest: /opt/quantum-motors/deploy/traefik.yml
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Deploy Traefik stack
+  community.docker.docker_stack:
+    state: present
+    name: "{{ traefik_stack_name }}"
+    compose:
+      - /opt/quantum-motors/deploy/traefik.yml
