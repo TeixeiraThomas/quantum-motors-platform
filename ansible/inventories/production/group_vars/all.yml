@@ -2,6 +2,10 @@ docker_packages:
   - docker.io
   - python3-docker
 
+docker_swarm_daemon_config:
+  insecure-registries:
+    - "172.16.248.236:5050"
+
 overlay_networks:
   - public
   - preprod_net
