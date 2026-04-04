@@ -1,0 +1,26 @@
+- name: Ensure SonarQube persistent directories exist on the target node
+  ansible.builtin.file:
+    path: "{{ item.source }}"
+    state: directory
+    owner: "1000"
+    group: "1000"
+    mode: "0755"
+  loop: "{{ sonarqube_mounts }}"
+  delegate_to: "{{ groups['sonarqube_nodes'][0] }}"
+  run_once: true
+
+- name: Deploy SonarQube service
+  community.docker.docker_swarm_service:
+    name: "{{ sonarqube_service_name }}"
+    image: "{{ sonarqube_image }}"
+    publish:
+      - published_port: "{{ sonarqube_port }}"
+        target_port: 9000
+    mounts: "{{ sonarqube_mounts }}"
+    placement:
+      constraints:
+        - node.labels.sonarqube == true
+    mode: replicated
+    replicas: 1
+    state: present
+  when: inventory_hostname == groups['swarm_managers'][0]

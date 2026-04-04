@@ -1,0 +1,5 @@
+- name: Deploy GitLab runners
+  hosts: swarm_managers:swarm_workers
+  become: true
+  roles:
+    - gitlab_runner

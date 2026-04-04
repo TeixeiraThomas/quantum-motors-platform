@@ -1,54 +1,11 @@
-- name: Install Docker packages
-  apt:
-    name: "{{ docker_packages }}"
-    state: present
-    update_cache: true
+- name: Install Docker packages and service
+  ansible.builtin.import_tasks: packages.yml
 
-- name: Enable Docker service
-  service:
-    name: docker
-    state: started
-    enabled: true
+- name: Configure the swarm cluster
+  ansible.builtin.import_tasks: cluster.yml
 
-- name: Check if node is already in a swarm
-  shell: docker info --format '{% raw %}{{.Swarm.LocalNodeState}}{% endraw %}'
-  register: swarm_state
-  changed_when: false
-  failed_when: false
+- name: Label application nodes
+  ansible.builtin.import_tasks: labels.yml
 
-- name: Init swarm on manager
-  shell: docker swarm init --advertise-addr {{ swarm_advertise_addr }}
-  when:
-    - inventory_hostname in groups['swarm_managers']
-    - swarm_state.stdout != "active"
-  register: swarm_init
-  changed_when: "'Swarm initialized' in swarm_init.stdout"
-  failed_when: false
-
-- name: Get worker join token
-  shell: docker swarm join-token -q worker
-  when: inventory_hostname in groups['swarm_managers']
-  register: worker_token
-  changed_when: false
-
-- name: Store worker token
-  set_fact:
-    swarm_worker_token: "{{ worker_token.stdout }}"
-  when: inventory_hostname in groups['swarm_managers']
-
-- name: Join workers to swarm
-  shell: docker swarm join --token {{ hostvars[groups['swarm_managers'][0]].swarm_worker_token }} {{ swarm_advertise_addr }}:2377
-  when:
-    - inventory_hostname in groups['swarm_workers']
-    - swarm_state.stdout != "active"
-  register: swarm_join
-  failed_when: false
-  changed_when: "'This node joined a swarm' in swarm_join.stdout"
-
-- name: Create overlay networks
-  shell: docker network create --driver overlay {{ item }}
-  loop: "{{ overlay_networks }}"
-  when: inventory_hostname in groups['swarm_managers']
-  register: network_create
-  failed_when: false
-  changed_when: "'already exists' not in ((network_create.stderr | default('')) ~ (network_create.stdout | default('')))"
+- name: Create swarm overlay networks
+  ansible.builtin.import_tasks: networks.yml

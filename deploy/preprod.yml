@@ -1,0 +1,71 @@
+version: "3.9"
+
+services:
+  mariadb-preprod:
+    image: mariadb:11
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MARIADB_DATABASE: quantum_motors
+      MARIADB_USER: quantum
+      MARIADB_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - mariadb_preprod_data:/var/lib/mysql
+    networks:
+      - preprod_net
+    deploy:
+      placement:
+        constraints:
+          - node.hostname == TIC-CLO5-VM2
+
+  api-preprod:
+    image: ${CI_REGISTRY_IMAGE}/backend:${IMAGE_TAG}
+    environment:
+      DATABASE_URL: mysql://quantum:${DB_PASSWORD}@mariadb-preprod:3306/quantum_motors
+      PORT: 3000
+      HOST: 0.0.0.0
+      CORS_ORIGIN: http://preprod.quantum.local
+      CAR_SERVICE_IMAGE_URL: http://api-preprod.quantum.local
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      NODE_ENV: production
+    networks:
+      - preprod_net
+      - public
+    depends_on:
+      - mariadb-preprod
+    deploy:
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.api-preprod.rule=Host(`api-preprod.quantum.local`)
+        - traefik.http.routers.api-preprod.entrypoints=web
+        - traefik.http.services.api-preprod.loadbalancer.server.port=3000
+
+  front-preprod:
+    image: ${CI_REGISTRY_IMAGE}/frontend:${IMAGE_TAG}
+    environment:
+      NEXT_PUBLIC_API_URL: http://api-preprod.quantum.local
+      NEXT_PUBLIC_DISPLAY_REACT_QUERY_DEBUGGER: "false"
+      HOST: 0.0.0.0
+      PORT: 4200
+      NODE_ENV: production
+    networks:
+      - preprod_net
+      - public
+    depends_on:
+      - api-preprod
+    deploy:
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.front-preprod.rule=Host(`preprod.quantum.local`)
+        - traefik.http.routers.front-preprod.entrypoints=web
+        - traefik.http.services.front-preprod.loadbalancer.server.port=4200
+
+networks:
+  preprod_net:
+    external: true
+    name: preprod_net
+  public:
+    external: true
+    name: public
+
+volumes:
+  mariadb_preprod_data:

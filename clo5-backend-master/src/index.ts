@@ -1,3 +1,5 @@
+import { existsSync } from "fs";
+import { resolve } from "path";
 import cors from "cors";
 import { configDotenv } from "dotenv";
 import express from "express";
@@ -11,13 +13,32 @@ import { ServiceRouter } from "./Router/ServiceRouter";
 /**
  * Start Express server.
  */
+function loadEnvironment() {
+  const appEnv = process.env.APP_ENV || process.env.NODE_ENV;
+  const baseEnvPath = resolve(process.cwd(), ".env");
+
+  if (existsSync(baseEnvPath)) {
+    configDotenv({
+      path: baseEnvPath,
+      override: false,
+    });
+  }
+
+  if (!appEnv) {
+    return;
+  }
+
+  const scopedEnvPath = resolve(process.cwd(), `.env.${appEnv}`);
+  if (existsSync(scopedEnvPath)) {
+    configDotenv({
+      path: scopedEnvPath,
+      override: true,
+    });
+  }
+}
+
 async function startServer() {
-  configDotenv({
-    path: `.env${
-      process.env.NODE_ENV != "production" ? `.${process.env.NODE_ENV}` : ""
-    }`,
-    override: true,
-  });
+  loadEnvironment();
 
   const portAssigned = Number(process.env.PORT) || 3000;
   const hostAssigned = process.env.HOST || "localhost";

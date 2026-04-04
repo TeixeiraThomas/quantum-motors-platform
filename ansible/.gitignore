@@ -1,0 +1,3 @@
+.inventory-test.yml
+inventories/production/hosts.test.yml
+*.retry

@@ -1,0 +1,52 @@
+- name: Configure gitlab.rb
+  ansible.builtin.blockinfile:
+    path: /etc/gitlab/gitlab.rb
+    marker: "# {mark} ANSIBLE MANAGED BLOCK"
+    block: |
+      external_url '{{ gitlab_external_url }}'
+      gitlab_rails['gitlab_signup_enabled'] = false
+      gitlab_rails['gitlab_default_can_create_group'] = true
+      gitlab_rails['gitlab_email_enabled'] = false
+      gitlab_rails['initial_root_password'] = '{{ vault_gitlab_root_password }}'
+      puma['worker_processes'] = {{ gitlab_puma_worker_processes }}
+      puma['exporter_enabled'] = false
+      sidekiq['concurrency'] = {{ gitlab_sidekiq_concurrency }}
+      sidekiq['metrics_enabled'] = false
+      alertmanager['enable'] = false
+      gitlab_exporter['enable'] = false
+      gitlab_kas['enable'] = false
+      node_exporter['enable'] = false
+      postgres_exporter['enable'] = false
+      prometheus_monitoring['enable'] = false
+      prometheus['enable'] = false
+      redis_exporter['enable'] = false
+      gitlab_rails['env'] = {
+        'MALLOC_CONF' => 'dirty_decay_ms:1000,muzzy_decay_ms:1000'
+      }
+      gitaly['env'] = {
+        'MALLOC_CONF' => 'dirty_decay_ms:1000,muzzy_decay_ms:1000',
+        'GITALY_COMMAND_SPAWN_MAX_PARALLEL' => '2'
+      }
+      registry_external_url '{{ gitlab_registry_url }}'
+  notify: Reconfigure GitLab
+  no_log: true
+
+- name: Flush GitLab handlers
+  ansible.builtin.meta: flush_handlers
+
+- name: Wait for GitLab HTTP port
+  ansible.builtin.wait_for:
+    host: "{{ ansible_host }}"
+    port: 80
+    delay: 10
+    timeout: 600
+
+- name: Wait for GitLab sign-in page
+  ansible.builtin.uri:
+    url: "{{ gitlab_external_url }}/users/sign_in"
+    method: GET
+    status_code: 200
+  register: install_gitlab_http_check
+  retries: 30
+  delay: 10
+  until: install_gitlab_http_check.status == 200

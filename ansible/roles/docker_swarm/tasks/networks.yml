@@ -1,0 +1,8 @@
+- name: Create overlay networks
+  community.docker.docker_network:
+    name: "{{ item }}"
+    driver: overlay
+    scope: swarm
+    state: present
+  loop: "{{ overlay_networks }}"
+  when: inventory_hostname == groups['swarm_managers'][0]

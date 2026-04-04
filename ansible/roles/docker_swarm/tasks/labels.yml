@@ -1,0 +1,7 @@
+- name: Label SonarQube nodes
+  community.docker.docker_node:
+    hostname: "{{ hostvars[item].ansible_hostname }}"
+    labels:
+      sonarqube: "true"
+  loop: "{{ groups['sonarqube_nodes'] | default([]) }}"
+  when: inventory_hostname == groups['swarm_managers'][0]

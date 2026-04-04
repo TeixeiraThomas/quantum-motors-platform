@@ -20,14 +20,14 @@
   "packageManager": "yarn@4.1.0",
   "scripts": {
     "build": "rimraf ./build && tsc -p tsconfig.json",
-    "dev": "NODE_ENV=dev nodemon",
-    "start": "node build/index.js",
+    "dev": "cross-env APP_ENV=dev nodemon",
+    "start": "cross-env NODE_ENV=production node build/index.js",
     "test": "dotenv -e .env.test -- npx prisma migrate reset --force && dotenv -e .env.test -- jest",
-    "prisma:reset:dev": "dotenv -e .env.dev -- npx prisma migrate reset --force",
+    "prisma:reset:dev": "dotenv -e .env -- npx prisma migrate reset --force",
     "lint": "eslint . --ext .ts",
     "prisma:deploy": "npx prisma migrate deploy",
     "prisma:generate": "npx prisma generate",
-    "prisma:migrate": "dotenv -e .env.dev -- npx prisma migrate dev"
+    "prisma:migrate": "dotenv -e .env -- npx prisma migrate dev"
   },
   "devDependencies": {
     "@babel/core": "^7.23.9",
@@ -41,6 +41,7 @@
     "@typescript-eslint/eslint-plugin": "^5.36.2",
     "@typescript-eslint/parser": "^5.36.2",
     "babel-jest": "^29.7.0",
+    "cross-env": "^7.0.3",
     "eslint": "^8.23.0",
     "jest": "^29.7.0",
     "jest-mock-extended": "^3.0.5",

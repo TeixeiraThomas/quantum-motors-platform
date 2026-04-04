@@ -8,4 +8,4 @@
   hosts: swarm_managers
   become: true
   roles:
-    - SonarQube
+    - sonarqube

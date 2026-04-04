@@ -15,7 +15,9 @@ export class AuthService {
    */
   static async login(req: any, res: any, next: any) {
     const auth = req.headers.authorization;
-    if (auth === "P@ssw0rd!") {
+    const adminPassword = process.env.ADMIN_PASSWORD || "P@ssw0rd!";
+
+    if (auth === adminPassword) {
       next();
     } else {
       res.status(401);

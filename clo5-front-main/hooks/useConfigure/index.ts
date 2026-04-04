@@ -1,3 +1,4 @@
+import { getApiBaseUrl } from "../../lib/api";
 import { useQuery } from "@tanstack/react-query";
 import { ChoicesConfiguration, Status } from "types/catalogTypes";
 
@@ -15,7 +16,7 @@ const fetchConfigure = async ({ code, choices }: queryParams) => {
   } else {
     (choices as ChoicesConfiguration).model = code as string;
   }
-  const data = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/car/configure`, {
+  const data = await fetch(`${getApiBaseUrl()}/car/configure`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

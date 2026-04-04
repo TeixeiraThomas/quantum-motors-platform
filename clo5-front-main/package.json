@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "author": "Dany Rafina <rafina_d@etna-alternance.net>",
+  "packageManager": "yarn@1.22.22",
   "scripts": {
     "dev": "next dev -p 4200",
     "build": "next build",

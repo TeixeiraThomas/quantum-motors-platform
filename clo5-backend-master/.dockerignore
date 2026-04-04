@@ -1,0 +1,10 @@
+.git
+.gitlab
+node_modules
+build
+coverage
+.env
+.env.*
+!.env.example
+Dockerfile
+README.md

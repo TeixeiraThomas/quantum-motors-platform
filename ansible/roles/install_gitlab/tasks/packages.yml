@@ -1,0 +1,69 @@
+- name: Remove invalid legacy GitLab APT repository
+  ansible.builtin.file:
+    path: /etc/apt/sources.list.d/packages_gitlab-ce.list
+    state: absent
+
+- name: Install GitLab dependencies
+  ansible.builtin.apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - debian-archive-keyring
+      - gnupg
+      - openssh-server
+      - perl
+      - postfix
+      - tzdata
+    state: present
+    update_cache: true
+
+- name: Ensure APT keyring directory exists
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Download GitLab repository signing key
+  ansible.builtin.get_url:
+    url: https://packages.gitlab.com/gitlab/gitlab-ce/gpgkey
+    dest: /etc/apt/keyrings/gitlab_gitlab-ce-archive-keyring.asc
+    mode: "0644"
+  register: install_gitlab_repo_key
+
+- name: Check GitLab repository keyring presence
+  ansible.builtin.stat:
+    path: /etc/apt/keyrings/gitlab_gitlab-ce-archive-keyring.gpg
+  register: install_gitlab_repo_keyring
+
+- name: Convert GitLab repository signing key to keyring format
+  ansible.builtin.command:
+    argv:
+      - gpg
+      - --dearmor
+      - --yes
+      - -o
+      - /etc/apt/keyrings/gitlab_gitlab-ce-archive-keyring.gpg
+      - /etc/apt/keyrings/gitlab_gitlab-ce-archive-keyring.asc
+  when:
+    - install_gitlab_repo_key.changed or not install_gitlab_repo_keyring.stat.exists
+
+- name: Add GitLab APT repository
+  ansible.builtin.apt_repository:
+    repo: >-
+      deb [signed-by=/etc/apt/keyrings/gitlab_gitlab-ce-archive-keyring.gpg]
+      https://packages.gitlab.com/gitlab/gitlab-ce/{{ ansible_facts['distribution'] | lower }}/{{ ansible_facts['distribution_release'] }}
+      {{ ansible_facts['distribution_release'] }} main
+    filename: gitlab_gitlab-ce
+    state: present
+    update_cache: true
+
+- name: Install GitLab CE
+  ansible.builtin.apt:
+    name: gitlab-ce
+    state: present
+    update_cache: true
+  environment:
+    EXTERNAL_URL: "{{ gitlab_external_url }}"

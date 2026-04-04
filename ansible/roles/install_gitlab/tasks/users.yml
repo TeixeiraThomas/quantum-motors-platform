@@ -1,0 +1,69 @@
+- name: Ensure professor admin users exist in GitLab
+  ansible.builtin.command:
+    argv:
+      - gitlab-rails
+      - runner
+      - |
+        admin_user = User.admins.order(:id).first
+        raise 'No GitLab admin user available to provision professors' if admin_user.nil?
+        default_organization = Organizations::Organization.default_organization
+        raise 'No default GitLab organization available to provision professors' if default_organization.nil?
+
+        password = '{{ vault_gitlab_prof_password }}'
+        desired_name = '{{ item.name }}'
+        desired_email = '{{ item.email }}'
+        user = User.find_by_username('{{ item.username }}')
+
+        if user.nil?
+          result = Users::CreateService.new(
+            admin_user,
+            {
+              username: '{{ item.username }}',
+              name: desired_name,
+              email: desired_email,
+              organization_id: default_organization.id,
+              password: password,
+              password_confirmation: password,
+              admin: true,
+              skip_confirmation: true
+            }
+          ).execute
+
+          raise result.message unless result.success?
+
+          puts 'created'
+        else
+          update_params = { user: user }
+
+          if user.name != desired_name
+            update_params[:name] = desired_name
+          end
+
+          if user.email != desired_email
+            update_params[:email] = desired_email
+          end
+
+          unless user.admin?
+            update_params[:admin] = true
+          end
+
+          unless user.confirmed_at
+            update_params[:confirmed_at] = Time.current
+          end
+
+          if update_params.length > 1
+            result = Users::UpdateService.new(admin_user, update_params).execute
+
+            raise result.message unless result.success?
+
+            puts 'updated'
+          else
+            puts 'unchanged'
+          end
+        end
+  loop: "{{ gitlab_admin_users }}"
+  loop_control:
+    label: "{{ item.username }}"
+  register: install_gitlab_admin_user_result
+  changed_when: (install_gitlab_admin_user_result.stdout | trim) in ['created', 'updated']
+  no_log: true

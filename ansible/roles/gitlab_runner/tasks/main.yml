@@ -1,0 +1,58 @@
+- name: Ensure GitLab Runner registration variables are defined
+  ansible.builtin.assert:
+    that:
+      - gitlab_runner_registration_token | length > 0
+    fail_msg: "gitlab_runner_registration_token must be defined before deploying runners"
+  no_log: true
+
+- name: Create runner config directory
+  ansible.builtin.file:
+    path: /srv/gitlab-runner
+    state: directory
+    mode: "0755"
+
+- name: Check whether the runner is already registered
+  ansible.builtin.stat:
+    path: /srv/gitlab-runner/config.toml
+  register: gitlab_runner_config
+
+- name: Register runner using a one-shot container
+  community.docker.docker_container:
+    name: gitlab-runner-register
+    image: "{{ gitlab_runner_image }}"
+    detach: false
+    auto_remove: true
+    command:
+      - register
+      - --non-interactive
+      - --url
+      - "{{ gitlab_runner_url }}"
+      - --registration-token
+      - "{{ gitlab_runner_registration_token }}"
+      - --executor
+      - docker
+      - --docker-image
+      - "{{ gitlab_runner_docker_image }}"
+      - --description
+      - "{{ inventory_hostname }}-runner"
+      - --tag-list
+      - "{{ gitlab_runner_tags | join(',') }}"
+      - --run-untagged=true
+      - --locked=false
+      - --docker-privileged=true
+      - --docker-volumes
+      - /var/run/docker.sock:/var/run/docker.sock
+    volumes:
+      - /srv/gitlab-runner:/etc/gitlab-runner
+  when: not gitlab_runner_config.stat.exists
+  no_log: true
+
+- name: Run gitlab runner container
+  community.docker.docker_container:
+    name: gitlab-runner
+    image: "{{ gitlab_runner_image }}"
+    state: started
+    restart_policy: always
+    volumes:
+      - /srv/gitlab-runner:/etc/gitlab-runner
+      - /var/run/docker.sock:/var/run/docker.sock

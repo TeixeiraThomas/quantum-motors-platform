@@ -1,0 +1,5 @@
+gitlab_swap_enabled: true
+gitlab_swapfile_path: /swapfile
+gitlab_swapfile_size_mb: 2048
+gitlab_puma_worker_processes: 0
+gitlab_sidekiq_concurrency: 5

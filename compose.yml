@@ -1,0 +1,62 @@
+name: quantum-motors
+
+services:
+  db:
+    image: mariadb:11
+    environment:
+      MARIADB_ROOT_PASSWORD: root
+      MARIADB_DATABASE: quantum_motors
+      MARIADB_USER: quantum
+      MARIADB_PASSWORD: quantum
+    healthcheck:
+      test: ["CMD-SHELL", "mariadb-admin ping -h localhost -u root -p$$MARIADB_ROOT_PASSWORD || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    ports:
+      - "3306:3306"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+      - ./clo5-backend-master/quantum-motors-initial.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+      - ./docker/mariadb-init/02-test-db.sql:/docker-entrypoint-initdb.d/02-test-db.sql:ro
+
+  backend:
+    build:
+      context: ./clo5-backend-master
+    command: ["node", "build/index.js"]
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: mysql://quantum:quantum@db:3306/quantum_motors
+      PORT: "3000"
+      HOST: 0.0.0.0
+      ADMIN_PASSWORD: P@ssw0rd!
+      CAR_SERVICE_IMAGE_URL: http://localhost:3000
+      CORS_ORIGIN: http://localhost:4200
+      NODE_ENV: production
+    ports:
+      - "3000:3000"
+
+  frontend:
+    build:
+      context: ./clo5-front-main
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:3000
+        NEXT_PUBLIC_DISPLAY_REACT_QUERY_DEBUGGER: "false"
+    depends_on:
+      backend:
+        condition: service_started
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:3000
+      NEXT_PUBLIC_DISPLAY_REACT_QUERY_DEBUGGER: "false"
+      API_URL_INTERNAL: http://backend:3000
+      HOST: 0.0.0.0
+      PORT: "4200"
+      NODE_ENV: production
+    ports:
+      - "4200:4200"
+
+volumes:
+  mariadb_data:

@@ -1,5 +1,11 @@
 - name: Deploy GitLab on VM4
   hosts: gitlab
   become: true
+  vars_prompt:
+    - name: ansible_become_password
+      prompt: Sudo password for the GitLab host
+      private: true
+  vars_files:
+    - ../inventories/production/group_vars/vault.yml
   roles:
     - install_gitlab

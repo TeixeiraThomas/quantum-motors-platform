@@ -1,0 +1,46 @@
+- name: Gather active swap devices
+  ansible.builtin.command:
+    cmd: swapon --show=NAME --noheadings
+  register: install_gitlab_active_swap
+  changed_when: false
+
+- name: Check swapfile presence
+  ansible.builtin.stat:
+    path: "{{ gitlab_swapfile_path }}"
+  register: install_gitlab_swapfile
+
+- name: Create GitLab swapfile
+  ansible.builtin.command:
+    cmd: "fallocate -l {{ gitlab_swapfile_size_mb }}M {{ gitlab_swapfile_path }}"
+  when:
+    - gitlab_swap_enabled
+    - not install_gitlab_swapfile.stat.exists
+
+- name: Secure GitLab swapfile
+  ansible.builtin.file:
+    path: "{{ gitlab_swapfile_path }}"
+    owner: root
+    group: root
+    mode: "0600"
+  when: gitlab_swap_enabled
+
+- name: Initialize GitLab swapfile
+  ansible.builtin.command:
+    cmd: "mkswap {{ gitlab_swapfile_path }}"
+  when:
+    - gitlab_swap_enabled
+    - not install_gitlab_swapfile.stat.exists
+
+- name: Persist GitLab swapfile
+  ansible.builtin.lineinfile:
+    path: /etc/fstab
+    regexp: "^{{ gitlab_swapfile_path | regex_escape }}\\s+none\\s+swap\\s+"
+    line: "{{ gitlab_swapfile_path }} none swap sw 0 0"
+  when: gitlab_swap_enabled
+
+- name: Enable GitLab swapfile
+  ansible.builtin.command:
+    cmd: "swapon {{ gitlab_swapfile_path }}"
+  when:
+    - gitlab_swap_enabled
+    - gitlab_swapfile_path not in install_gitlab_active_swap.stdout_lines

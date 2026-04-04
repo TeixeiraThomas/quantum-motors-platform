@@ -1,0 +1,71 @@
+version: "3.9"
+
+services:
+  mariadb-prod:
+    image: mariadb:11
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MARIADB_DATABASE: quantum_motors
+      MARIADB_USER: quantum
+      MARIADB_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - mariadb_prod_data:/var/lib/mysql
+    networks:
+      - prod_net
+    deploy:
+      placement:
+        constraints:
+          - node.hostname == TIC-CLO5-VM2
+
+  api-prod-blue:
+    image: ${CI_REGISTRY_IMAGE}/backend:${IMAGE_TAG}
+    environment:
+      DATABASE_URL: mysql://quantum:${DB_PASSWORD}@mariadb-prod:3306/quantum_motors
+      PORT: 3000
+      HOST: 0.0.0.0
+      CORS_ORIGIN: http://front-blue.quantum.local
+      CAR_SERVICE_IMAGE_URL: http://api-blue.quantum.local
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      NODE_ENV: production
+    networks:
+      - prod_net
+      - public
+    depends_on:
+      - mariadb-prod
+    deploy:
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.api-blue.rule=Host(`api-blue.quantum.local`)
+        - traefik.http.routers.api-blue.entrypoints=web
+        - traefik.http.services.api-blue.loadbalancer.server.port=3000
+
+  front-prod-blue:
+    image: ${CI_REGISTRY_IMAGE}/frontend:${IMAGE_TAG}
+    environment:
+      NEXT_PUBLIC_API_URL: http://api-blue.quantum.local
+      NEXT_PUBLIC_DISPLAY_REACT_QUERY_DEBUGGER: "false"
+      HOST: 0.0.0.0
+      PORT: 4200
+      NODE_ENV: production
+    networks:
+      - prod_net
+      - public
+    depends_on:
+      - api-prod-blue
+    deploy:
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.front-blue.rule=Host(`front-blue.quantum.local`)
+        - traefik.http.routers.front-blue.entrypoints=web
+        - traefik.http.services.front-blue.loadbalancer.server.port=4200
+
+networks:
+  prod_net:
+    external: true
+    name: prod_net
+  public:
+    external: true
+    name: public
+
+volumes:
+  mariadb_prod_data:
