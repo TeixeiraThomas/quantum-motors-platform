@@ -104,9 +104,11 @@ deploy_preprod:
     - export ADMIN_PASSWORD="$BACKEND_ADMIN_PASSWORD"
     - docker stack rm preprod || true
     - while docker stack ls --format '{{.Name}}' | grep -qx 'preprod'; do sleep 2; done
-    - rm -rf "$NFS_EXPORTS_ROOT/preprod/mariadb"
-    - mkdir -p "$NFS_EXPORTS_ROOT/preprod/mariadb"
+    - docker run --rm -v "$NFS_EXPORTS_ROOT:/nfs" docker:24.0.7-cli sh -c 'rm -rf /nfs/preprod/mariadb && mkdir -p /nfs/preprod/mariadb'
     - docker stack deploy --with-registry-auth -c deploy/preprod.yml preprod
+    - until docker service ls --format '{{.Name}} {{.Replicas}}' | awk '$1 == "preprod_mariadb-preprod" && $2 == "1/1" { found = 1 } END { exit(found ? 0 : 1) }'; do sleep 5; done
+    - until docker service ls --format '{{.Name}} {{.Replicas}}' | awk '$1 == "preprod_api-preprod" && $2 == "1/1" { found = 1 } END { exit(found ? 0 : 1) }'; do sleep 5; done
+    - until docker service ls --format '{{.Name}} {{.Replicas}}' | awk '$1 == "preprod_front-preprod" && $2 == "1/1" { found = 1 } END { exit(found ? 0 : 1) }'; do sleep 5; done
 
 test_preprod:
   stage: test_preprod
@@ -138,6 +140,9 @@ bootstrap_prod_blue:
     - export ADMIN_PASSWORD="$BACKEND_ADMIN_PASSWORD"
     - docker stack deploy --with-registry-auth -c deploy/prod-db.yml prod-db
     - docker stack deploy --with-registry-auth -c deploy/prod-blue-live.yml prod-live
+    - until docker service ls --format '{{.Name}} {{.Replicas}}' | awk '$1 == "prod-db_mariadb-prod" && $2 == "1/1" { found = 1 } END { exit(found ? 0 : 1) }'; do sleep 5; done
+    - until docker service ls --format '{{.Name}} {{.Replicas}}' | awk '$1 == "prod-live_api-prod-blue" && $2 == "1/1" { found = 1 } END { exit(found ? 0 : 1) }'; do sleep 5; done
+    - until docker service ls --format '{{.Name}} {{.Replicas}}' | awk '$1 == "prod-live_front-prod-blue" && $2 == "1/1" { found = 1 } END { exit(found ? 0 : 1) }'; do sleep 5; done
 
 deploy_green:
   stage: deploy_green
@@ -156,6 +161,9 @@ deploy_green:
     - export ADMIN_PASSWORD="$BACKEND_ADMIN_PASSWORD"
     - docker stack deploy --with-registry-auth -c deploy/prod-db.yml prod-db
     - docker stack deploy --with-registry-auth -c deploy/prod-green.yml prodgreen
+    - until docker service ls --format '{{.Name}} {{.Replicas}}' | awk '$1 == "prod-db_mariadb-prod" && $2 == "1/1" { found = 1 } END { exit(found ? 0 : 1) }'; do sleep 5; done
+    - until docker service ls --format '{{.Name}} {{.Replicas}}' | awk '$1 == "prodgreen_api-prod-green" && $2 == "1/1" { found = 1 } END { exit(found ? 0 : 1) }'; do sleep 5; done
+    - until docker service ls --format '{{.Name}} {{.Replicas}}' | awk '$1 == "prodgreen_front-prod-green" && $2 == "1/1" { found = 1 } END { exit(found ? 0 : 1) }'; do sleep 5; done
 
 test_green:
   stage: test_green
@@ -183,5 +191,7 @@ switch_prod:
     - export ADMIN_PASSWORD="$BACKEND_ADMIN_PASSWORD"
     - docker stack deploy --with-registry-auth -c deploy/prod-green-live.yml prod-live
     - docker stack rm prodgreen || true
+    - until docker service ls --format '{{.Name}} {{.Replicas}}' | awk '$1 == "prod-live_api-prod-green" && $2 == "1/1" { found = 1 } END { exit(found ? 0 : 1) }'; do sleep 5; done
+    - until docker service ls --format '{{.Name}} {{.Replicas}}' | awk '$1 == "prod-live_front-prod-green" && $2 == "1/1" { found = 1 } END { exit(found ? 0 : 1) }'; do sleep 5; done
     - apk add --no-cache curl
     - sh tests/functional/smoke.sh "http://$SWARM_MANAGER_IP" front.quantum.local api.quantum.local
