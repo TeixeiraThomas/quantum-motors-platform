@@ -25,6 +25,13 @@ default:
   before_script:
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
 
+.docker_deploy_job:
+  image: docker:24.0.7-cli
+  before_script:
+    - export DEPLOY_REGISTRY_USER="${REGISTRY_PULL_USER:-$CI_REGISTRY_USER}"
+    - export DEPLOY_REGISTRY_PASSWORD="${REGISTRY_PULL_PASSWORD:-$CI_REGISTRY_PASSWORD}"
+    - docker login -u "$DEPLOY_REGISTRY_USER" -p "$DEPLOY_REGISTRY_PASSWORD" "$CI_REGISTRY"
+
 test_backend:
   stage: test
   image: node:20-bookworm-slim
@@ -83,7 +90,7 @@ build_frontend:
 
 deploy_preprod:
   stage: deploy_preprod
-  extends: .docker_job
+  extends: .docker_deploy_job
   tags:
     - swarm-manager
   needs:
@@ -111,7 +118,7 @@ test_preprod:
 
 bootstrap_prod_blue:
   stage: deploy_green
-  extends: .docker_job
+  extends: .docker_deploy_job
   tags:
     - swarm-manager
   needs:
@@ -130,7 +137,7 @@ bootstrap_prod_blue:
 
 deploy_green:
   stage: deploy_green
-  extends: .docker_job
+  extends: .docker_deploy_job
   tags:
     - swarm-manager
   needs:
@@ -160,7 +167,7 @@ test_green:
 
 switch_prod:
   stage: switch_prod
-  extends: .docker_job
+  extends: .docker_deploy_job
   tags:
     - swarm-manager
   needs:

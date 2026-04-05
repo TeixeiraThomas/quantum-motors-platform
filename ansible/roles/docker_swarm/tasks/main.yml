@@ -1,6 +1,9 @@
 - name: Install Docker packages and service
   ansible.builtin.import_tasks: packages.yml
 
+- name: Configure the Docker daemon
+  ansible.builtin.import_tasks: daemon.yml
+
 - name: Configure the swarm cluster
   ansible.builtin.import_tasks: cluster.yml
 

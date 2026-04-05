@@ -118,6 +118,7 @@ Les manifests concernes sont:
 - role principal: `install_gitlab`
 - URL applicative: `http://172.16.248.236`
 - registry: `http://172.16.248.236:5050`
+- les noeuds Swarm declarent cette registry comme `insecure registry` dans la configuration Docker
 
 ### Secrets Ansible
 
@@ -187,11 +188,15 @@ Variables GitLab CI a definir dans le projet:
 
 - `CI_REGISTRY_USER`
 - `CI_REGISTRY_PASSWORD`
+- `REGISTRY_PULL_USER`
+- `REGISTRY_PULL_PASSWORD`
 - `PREPROD_DB_ROOT_PASSWORD`
 - `PREPROD_DB_PASSWORD`
 - `PROD_DB_ROOT_PASSWORD`
 - `PROD_DB_PASSWORD`
 - `BACKEND_ADMIN_PASSWORD`
+
+Les jobs de build peuvent utiliser les credentials CI GitLab natifs. Les jobs de deploiement Swarm utilisent un credential registry durable afin que les noeuds puissent re-pull les images apres la fin du job CI.
 
 ## 8. Procedures de deploiement
 
