@@ -102,6 +102,10 @@ deploy_preprod:
     - export DB_ROOT_PASSWORD="$PREPROD_DB_ROOT_PASSWORD"
     - export DB_PASSWORD="$PREPROD_DB_PASSWORD"
     - export ADMIN_PASSWORD="$BACKEND_ADMIN_PASSWORD"
+    - docker stack rm preprod || true
+    - while docker stack ls --format '{{.Name}}' | grep -qx 'preprod'; do sleep 2; done
+    - rm -rf "$NFS_EXPORTS_ROOT/preprod/mariadb"
+    - mkdir -p "$NFS_EXPORTS_ROOT/preprod/mariadb"
     - docker stack deploy --with-registry-auth -c deploy/preprod.yml preprod
 
 test_preprod:

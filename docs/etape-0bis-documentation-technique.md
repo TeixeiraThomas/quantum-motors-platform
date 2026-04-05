@@ -166,7 +166,7 @@ Le pipeline GitLab est defini dans [`/.gitlab-ci.yml`](../.gitlab-ci.yml).
 
 1. tests backend et lint front/backend
 2. build et push des images `backend` et `frontend`
-3. deploiement de `preprod` avec base MariaDB initialisee par le SQL de catalogue
+3. deploiement de `preprod` avec remise a zero du stockage MariaDB puis initialisation par le SQL de catalogue
 4. smoke tests HTTP sur `preprod.quantum.local` et `api-preprod.quantum.local`
 5. deploiement de la base `prod-db`, puis de `prod-green`
 6. smoke tests HTTP sur `front-green.quantum.local` et `api-green.quantum.local`
@@ -295,5 +295,5 @@ Quantum-Motors/
 - `GitLab` reste volontairement hors cluster pour respecter les consignes du module.
 - Les mots de passe et tokens doivent rester dans `Ansible Vault` ou dans les variables GitLab CI.
 - Les manifests `prod-blue-live.yml` et `prod-green-live.yml` sont les seuls a porter les domaines stables `front.quantum.local` et `api.quantum.local`.
-- Les services MariaDB Swarm montent le SQL de catalogue au premier demarrage pour disposer de donnees fonctionnelles en preprod et en prod.
+- Les services MariaDB Swarm montent le SQL de catalogue au premier demarrage pour disposer de donnees fonctionnelles en preprod et en prod. Ce SQL inclut aussi l'etat attendu de `_prisma_migrations`.
 - Le frontend ne doit pas etre rebuild par environnement pour changer l'URL backend: le proxy `/api` evite ce couplage.
