@@ -36,6 +36,7 @@ services:
     deploy:
       labels:
         - traefik.enable=true
+        - traefik.docker.network=public
         - traefik.http.routers.api-preprod.rule=Host(`api-preprod.quantum.local`)
         - traefik.http.routers.api-preprod.entrypoints=web
         - traefik.http.services.api-preprod.loadbalancer.server.port=3000
@@ -53,6 +54,7 @@ services:
     deploy:
       labels:
         - traefik.enable=true
+        - traefik.docker.network=public
         - traefik.http.routers.front-preprod.rule=Host(`preprod.quantum.local`)
         - traefik.http.routers.front-preprod.entrypoints=web
         - traefik.http.services.front-preprod.loadbalancer.server.port=4200

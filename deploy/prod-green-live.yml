@@ -17,11 +17,14 @@ services:
     deploy:
       labels:
         - traefik.enable=true
+        - traefik.docker.network=public
         - traefik.http.routers.api-green.rule=Host(`api-green.quantum.local`)
         - traefik.http.routers.api-green.entrypoints=web
+        - traefik.http.routers.api-green.service=api-green
         - traefik.http.services.api-green.loadbalancer.server.port=3000
         - traefik.http.routers.api-live-green.rule=Host(`api.quantum.local`)
         - traefik.http.routers.api-live-green.entrypoints=web
+        - traefik.http.routers.api-live-green.service=api-live-green
         - traefik.http.services.api-live-green.loadbalancer.server.port=3000
 
   front-prod-green:
@@ -37,11 +40,14 @@ services:
     deploy:
       labels:
         - traefik.enable=true
+        - traefik.docker.network=public
         - traefik.http.routers.front-green.rule=Host(`front-green.quantum.local`)
         - traefik.http.routers.front-green.entrypoints=web
+        - traefik.http.routers.front-green.service=front-green
         - traefik.http.services.front-green.loadbalancer.server.port=4200
         - traefik.http.routers.front-live-green.rule=Host(`front.quantum.local`)
         - traefik.http.routers.front-live-green.entrypoints=web
+        - traefik.http.routers.front-live-green.service=front-live-green
         - traefik.http.services.front-live-green.loadbalancer.server.port=4200
 
 networks:

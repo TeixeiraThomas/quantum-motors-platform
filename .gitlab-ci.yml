@@ -32,6 +32,9 @@ default:
     - export DEPLOY_REGISTRY_PASSWORD="${REGISTRY_PULL_PASSWORD:-$CI_REGISTRY_PASSWORD}"
     - docker login -u "$DEPLOY_REGISTRY_USER" -p "$DEPLOY_REGISTRY_PASSWORD" "$CI_REGISTRY"
 
+.docker_host_job:
+  image: docker:24.0.7-cli
+
 test_backend:
   stage: test
   image: node:20-bookworm-slim
@@ -112,7 +115,7 @@ deploy_preprod:
 
 test_preprod:
   stage: test_preprod
-  image: curlimages/curl:8.7.1
+  extends: .docker_host_job
   tags:
     - swarm-manager
   needs:
@@ -120,7 +123,7 @@ test_preprod:
   rules:
     - if: '$CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH == "main"'
   script:
-    - sh tests/functional/smoke.sh "http://$SWARM_MANAGER_IP" preprod.quantum.local api-preprod.quantum.local
+    - docker run --rm --network host -i curlimages/curl:8.7.1 sh -s -- "http://127.0.0.1" preprod.quantum.local api-preprod.quantum.local < tests/functional/smoke.sh
 
 bootstrap_prod_blue:
   stage: deploy_green
@@ -167,7 +170,7 @@ deploy_green:
 
 test_green:
   stage: test_green
-  image: curlimages/curl:8.7.1
+  extends: .docker_host_job
   tags:
     - swarm-manager
   needs:
@@ -175,7 +178,7 @@ test_green:
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
   script:
-    - sh tests/functional/smoke.sh "http://$SWARM_MANAGER_IP" front-green.quantum.local api-green.quantum.local
+    - docker run --rm --network host -i curlimages/curl:8.7.1 sh -s -- "http://127.0.0.1" front-green.quantum.local api-green.quantum.local < tests/functional/smoke.sh
 
 switch_prod:
   stage: switch_prod
@@ -193,5 +196,4 @@ switch_prod:
     - docker stack rm prodgreen || true
     - until docker service ls --format '{{.Name}} {{.Replicas}}' | grep -q '^prod-live_api-prod-green 1/1$'; do sleep 5; done
     - until docker service ls --format '{{.Name}} {{.Replicas}}' | grep -q '^prod-live_front-prod-green 1/1$'; do sleep 5; done
-    - apk add --no-cache curl
-    - sh tests/functional/smoke.sh "http://$SWARM_MANAGER_IP" front.quantum.local api.quantum.local
+    - docker run --rm --network host -i curlimages/curl:8.7.1 sh -s -- "http://127.0.0.1" front.quantum.local api.quantum.local < tests/functional/smoke.sh

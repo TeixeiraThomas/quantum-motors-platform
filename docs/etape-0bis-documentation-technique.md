@@ -66,6 +66,8 @@ Usage:
 - `preprod_net`: services applicatifs de preproduction + MariaDB preprod
 - `prod_net`: services applicatifs blue/green + MariaDB prod
 
+Les services exposes via Traefik definissent explicitement `traefik.docker.network=public` pour eviter que Traefik selectionne un reseau applicatif prive sur les conteneurs multi-reseaux.
+
 ### Stockage
 
 - export NFS racine: `/srv/nfs/quantum-motors`
