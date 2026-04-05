@@ -192,7 +192,7 @@ switch_prod:
   script:
     - export DB_PASSWORD="$PROD_DB_PASSWORD"
     - export ADMIN_PASSWORD="$BACKEND_ADMIN_PASSWORD"
-    - docker stack deploy --with-registry-auth -c deploy/prod-green-live.yml prod-live
+    - docker stack deploy --prune --with-registry-auth -c deploy/prod-green-live.yml prod-live
     - docker stack rm prodgreen || true
     - until docker service ls --format '{{.Name}} {{.Replicas}}' | grep -q '^prod-live_api-prod-green 1/1$'; do sleep 5; done
     - until docker service ls --format '{{.Name}} {{.Replicas}}' | grep -q '^prod-live_front-prod-green 1/1$'; do sleep 5; done
