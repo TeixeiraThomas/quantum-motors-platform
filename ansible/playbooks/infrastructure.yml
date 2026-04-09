@@ -11,8 +11,14 @@
   roles:
     - traefik
 
+- name: Deploy centralized logging
+  hosts: swarm_managers
+  become: true
+  roles:
+    - logging_stack
+
 - name: Deploy SonarQube
   hosts: swarm_managers
   become: true
   roles:
-    - sonarqube
+    - SonarQube

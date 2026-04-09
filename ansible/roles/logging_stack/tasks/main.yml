@@ -1,0 +1,84 @@
+- name: Install Docker stack Python dependencies
+  ansible.builtin.apt:
+    name:
+      - python3-jsondiff
+    state: present
+    update_cache: true
+
+- name: Ensure Loki data directory exists on the logging node
+  ansible.builtin.file:
+    path: "{{ loki_data_dir }}"
+    state: directory
+    owner: "10001"
+    group: "10001"
+    mode: "0755"
+  delegate_to: "{{ groups['logging_nodes'][0] }}"
+  run_once: true
+
+- name: Ensure Alloy state directory exists on every swarm node
+  ansible.builtin.file:
+    path: "{{ alloy_data_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0777"
+  delegate_to: "{{ item }}"
+  loop: "{{ groups['swarm_managers'] + groups['swarm_workers'] }}"
+  run_once: true
+
+- name: Ensure Grafana logs data directory exists on the logging node
+  ansible.builtin.file:
+    path: "{{ grafana_logs_data_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0777"
+  delegate_to: "{{ groups['logging_nodes'][0] }}"
+  run_once: true
+
+- name: Ensure logging stack directory exists
+  ansible.builtin.file:
+    path: /opt/quantum-motors/deploy/logging
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Copy logging stack definition
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../../deploy/logging.yml"
+    dest: /opt/quantum-motors/deploy/logging.yml
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Copy Loki configuration
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../../deploy/logging/loki-config.yml"
+    dest: /opt/quantum-motors/deploy/logging/loki-config.yml
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Copy Alloy configuration
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../../deploy/logging/config.alloy"
+    dest: /opt/quantum-motors/deploy/logging/config.alloy
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Copy Grafana datasource configuration
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../../deploy/logging/grafana-datasource.yml"
+    dest: /opt/quantum-motors/deploy/logging/grafana-datasource.yml
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Deploy logging stack
+  community.docker.docker_stack:
+    state: present
+    name: "{{ logging_stack_name }}"
+    compose:
+      - /opt/quantum-motors/deploy/logging.yml

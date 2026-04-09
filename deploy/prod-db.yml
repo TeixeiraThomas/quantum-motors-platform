@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   mariadb-prod:
     image: mariadb:11
@@ -21,6 +19,13 @@ services:
       placement:
         constraints:
           - node.hostname == TIC-CLO5-VM2
+      resources:
+        reservations:
+          cpus: "0.25"
+          memory: 384M
+        limits:
+          cpus: "1.00"
+          memory: 1024M
 
 networks:
   prod_net:

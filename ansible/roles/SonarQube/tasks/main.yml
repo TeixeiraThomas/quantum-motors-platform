@@ -20,6 +20,8 @@
     placement:
       constraints:
         - node.labels.sonarqube == true
+    reservations: "{{ sonarqube_resources.reservations }}"
+    limits: "{{ sonarqube_resources.limits }}"
     mode: replicated
     replicas: 1
     state: present

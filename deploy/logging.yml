@@ -1,0 +1,105 @@
+services:
+  loki:
+    image: grafana/loki:3.6.0
+    command:
+      - -config.file=/etc/loki/config.yml
+    configs:
+      - source: loki_config
+        target: /etc/loki/config.yml
+    volumes:
+      - /srv/loki:/loki
+    networks:
+      - logs_net
+    ports:
+      - target: 3100
+        published: 3100
+        protocol: tcp
+        mode: ingress
+    deploy:
+      placement:
+        constraints:
+          - node.labels.logging == true
+      resources:
+        reservations:
+          cpus: "0.10"
+          memory: 256M
+        limits:
+          cpus: "0.50"
+          memory: 768M
+
+  alloy:
+    image: grafana/alloy:latest
+    user: "0:0"
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/data
+      - /etc/alloy/config.alloy
+    environment:
+      ALLOY_NODE_HOSTNAME: "{{.Node.Hostname}}"
+    configs:
+      - source: alloy_config
+        target: /etc/alloy/config.alloy
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /srv/alloy:/var/lib/alloy/data
+    networks:
+      - logs_net
+    deploy:
+      mode: global
+      resources:
+        reservations:
+          cpus: "0.05"
+          memory: 64M
+        limits:
+          cpus: "0.25"
+          memory: 128M
+
+  grafana-logs:
+    image: grafana/grafana:11.0.0
+    environment:
+      GF_PATHS_PROVISIONING: /etc/grafana/provisioning
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+    configs:
+      - source: grafana_loki_datasource
+        target: /etc/grafana/provisioning/datasources/ds.yml
+    volumes:
+      - /srv/grafana:/var/lib/grafana
+    networks:
+      - logs_net
+      - public
+    deploy:
+      placement:
+        constraints:
+          - node.labels.logging == true
+      resources:
+        reservations:
+          cpus: "0.10"
+          memory: 128M
+        limits:
+          cpus: "0.50"
+          memory: 256M
+      labels:
+        - traefik.enable=true
+        - traefik.docker.network=public
+        - traefik.http.routers.logs-grafana.rule=Host(`logs.quantum.local`)
+        - traefik.http.routers.logs-grafana.entrypoints=web
+        - traefik.http.services.logs-grafana.loadbalancer.server.port=3000
+
+configs:
+  loki_config:
+    file: ./logging/loki-config.yml
+  alloy_config:
+    file: ./logging/config.alloy
+  grafana_loki_datasource:
+    file: ./logging/grafana-datasource.yml
+
+networks:
+  logs_net:
+    external: true
+    name: logs_net
+  public:
+    external: true
+    name: public

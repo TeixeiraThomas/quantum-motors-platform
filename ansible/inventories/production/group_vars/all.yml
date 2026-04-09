@@ -6,10 +6,16 @@ docker_swarm_daemon_config:
   insecure-registries:
     - "172.16.248.236:5050"
 
+swarm_node_labels:
+  vm3:
+    sonarqube: "true"
+    logging: "true"
+
 overlay_networks:
   - public
   - preprod_net
   - prod_net
+  - logs_net
 
 nfs_exports_root: /srv/nfs/quantum-motors
 nfs_export_directories:
@@ -22,6 +28,13 @@ traefik_stack_name: traefik
 sonarqube_service_name: sonarqube
 sonarqube_image: sonarqube:lts-community
 sonarqube_port: 9000
+sonarqube_resources:
+  reservations:
+    cpus: 0.50
+    memory: 1024M
+  limits:
+    cpus: 1.50
+    memory: 1536M
 sonarqube_mounts:
   - source: /srv/sonarqube/data
     target: /opt/sonarqube/data
@@ -33,14 +46,19 @@ sonarqube_mounts:
     target: /opt/sonarqube/logs
     type: bind
 
+logging_stack_name: logging
+loki_data_dir: /srv/loki
+alloy_data_dir: /srv/alloy
+grafana_logs_data_dir: /srv/grafana
+
 gitlab_external_url: "http://172.16.248.236"
 gitlab_registry_url: "http://172.16.248.236:5050"
 gitlab_runner_registration_token: "{{ vault_gitlab_runner_registration_token | default('') }}"
 
 gitlab_admin_users:
-  - username: rafina_d
-    name: rafina_d
-    email: rafina_d@local.test
-  - username: rinaz_a
-    name: rinaz_a
-    email: rinaz_a@local.test
+  - username: intervenant_1
+    name: intervenant_1
+    email: intervenant_1@local.test
+  - username: intervenant_2
+    name: intervenant_2
+    email: intervenant_2@local.test

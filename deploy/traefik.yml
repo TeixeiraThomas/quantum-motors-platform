@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   traefik:
     image: traefik:v2.11
@@ -23,6 +21,13 @@ services:
       placement:
         constraints:
           - node.role == manager
+      resources:
+        reservations:
+          cpus: "0.10"
+          memory: 64M
+        limits:
+          cpus: "0.50"
+          memory: 256M
       labels:
         - traefik.enable=true
         - traefik.http.routers.traefik-dashboard.rule=Host(`traefik.quantum.local`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))
