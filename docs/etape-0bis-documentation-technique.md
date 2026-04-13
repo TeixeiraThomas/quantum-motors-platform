@@ -419,3 +419,84 @@ Quantum-Motors/
 - Le frontend ne doit pas etre rebuild par environnement pour changer l'URL backend: le proxy `/api` evite ce couplage.
 - `Grafana Alloy` lit les logs Docker via le socket local de chaque noeud et les enrichit avec les labels Swarm avant envoi vers `Loki`.
 - L'acces anonyme a `Grafana` est acceptable pour le POC interne, mais doit etre remplace par une authentification avant une mise en production reelle.
+
+## 13. Procedures de reproduction
+
+Les fichiers `docs/PROC-*.md` contiennent les procedures **pas-a-pas** pour reproduire l'infrastructure complete.
+
+### Index des procedures
+
+| # | Fichier | Titre | Duree | Prerequis | Objectif |
+|---|---------|-------|-------|-----------|----------|
+| 0 | [PROC-00-check-prerequisites.md](../PROC-00-check-prerequisites.md) | Verifier les prerequis system | 15 min | Poste local | Valider VMs, reseau, Ansible |
+| 1 | [PROC-01-vault-setup.md](../PROC-01-vault-setup.md) | Initialisation Ansible Vault | 10 min | Ansible installe | Configurer les secrets |
+| 2 | [PROC-02-gitlab-runner-token.md](../PROC-02-gitlab-runner-token.md) | Obtenir token GitLab Runner | 15 min | VM4 GitLab active | Enregistrer runners Swarm |
+| 3 | [PROC-03-gitlab-ci-variables.md](../PROC-03-gitlab-ci-variables.md) | Variables CI/CD GitLab | 20 min | Depot GitLab cree | Configurer la pipeline |
+| 4 | [PROC-04-hosts-setup.md](../PROC-04-hosts-setup.md) | DNS local /etc/hosts | 10 min | Acces reseau | Resoudre domaines *.quantum.local |
+| 5 | [PROC-05-cicd-validation.md](../PROC-05-cicd-validation.md) | Validation CI/CD live | 30 min | Tous playbooks OK | Tester build & deploy |
+
+**Flux recommande :**
+
+1. Proc 0 : Verifier prerequis
+2. Proc 1 : Configurer Vault
+3. Playbook `infrastructure.yml` (Ansible)
+4. Playbook `gitlab.yml` (Ansible)
+5. Proc 2 : Obtenir token runner
+6. Playbook `runners.yml` (Ansible)
+7. Proc 3 : Configurer CI/CD variables
+8. Proc 4 : Configurer /etc/hosts
+9. Proc 5 : Valider pipeline live
+
+**Temps total :** ~1 heure pour reproduction complete
+
+## 14. Modifications recentes (2026-04-13)
+
+### Corrections apportees au depot
+
+#### 1. Labels Swarm (docker_swarm/tasks/labels.yml)
+
+**Probleme :** Utilisation de `ansible_hostname` qui pouvait ne pas matcher les hostnames reels
+
+**Correction :**
+- Utilisation de `hostvars[item.key].ansible_hostname | default(item.key)` pour robustesse
+- Ajout d'une validation post-application des labels
+- La tache decrit maintenant aussi l'erreur esperee si le matching echoue
+
+#### 2. Placement MariaDB (deploy/prod-db.yml)
+
+**Probleme :** Hostname hardcod`TIC-CLO5-VM2` - cassait le placement si hostname different
+
+**Correction :**
+- Passage a `node.labels.db-node == true`
+- Ajout du label `db-node: "true"` pour vm2 dans all.yml
+
+#### 3. Placement MariaDB preprod (deploy/preprod.yml)
+
+**Memeproblem :** Hostname hardcod pour placement
+
+**Correction :** Idem prod-db.yml - utilisation label `db-node`
+
+#### 4. Validation admin users (install_gitlab/tasks/configure.yml)
+
+**Probleme :** Placeholders `intervenant_1`, `intervenant_2` acceptes sans warning
+
+**Correction :**
+- Assert en debut de `configure.yml`
+- Valide que les placeholders ont ete remplaces par vrais usernames/emails
+- Rejette le playbook si placeholders detectes
+
+#### 5. Token runner (vault.yml)
+
+**Probleme :** Variable `vault_gitlab_runner_registration_token` manquait
+
+**Correction :** Ajout de la variable au vault.yml (chiffree)
+
+### Fichiers crees (procedures)
+
+- docs/PROC-00-check-prerequisites.md
+- docs/PROC-01-vault-setup.md
+- docs/PROC-02-gitlab-runner-token.md
+- docs/PROC-03-gitlab-ci-variables.md
+- docs/PROC-04-hosts-setup.md
+- docs/PROC-05-cicd-validation.md
+- docs/PROCEDURES.md (index master)

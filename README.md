@@ -35,6 +35,18 @@ La description detaillee, les choix techniques, les procedures et les variables 
 
 Avant de lancer `ansible/playbooks/gitlab.yml`, pensez a remplacer les placeholders de `gitlab_admin_users` par les vrais logins des intervenants dans [`ansible/inventories/production/group_vars/all.yml`](./ansible/inventories/production/group_vars/all.yml).
 
+## Commandes Ansible
+
+Toutes les commandes Ansible doivent être exécutées depuis la racine du dépôt avec la configuration appropriée :
+
+```bash
+# Exemple de syntaxe correcte
+cd /mnt/c/ETNA/MASTER2/Quantum-Motors  # ou votre chemin local
+ANSIBLE_CONFIG=ansible/ansible.cfg ansible-playbook ansible/playbooks/infrastructure.yml --syntax-check
+```
+
+Voir [`docs/PROCEDURES.md`](./docs/PROCEDURES.md) pour le guide complet de déploiement.
+
 ## Maintenance documentaire
 
 La documentation de `docs/` doit etre mise a jour a chaque evolution significative:

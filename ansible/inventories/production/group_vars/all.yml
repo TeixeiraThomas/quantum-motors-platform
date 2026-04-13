@@ -7,6 +7,8 @@ docker_swarm_daemon_config:
     - "172.16.248.236:5050"
 
 swarm_node_labels:
+  vm2:
+    db-node: "true"
   vm3:
     sonarqube: "true"
     logging: "true"

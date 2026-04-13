@@ -3,6 +3,7 @@ import { resolve } from "path";
 import cors from "cors";
 import { configDotenv } from "dotenv";
 import express, { NextFunction, Request, Response } from "express";
+import IndexRouter from "./Controller/index";
 import { BatteryRouter } from "./Router/BatteryRouter";
 import { CarRouter } from "./Router/CarRouter";
 import { ColorRouter } from "./Router/ColorRouter";
@@ -52,6 +53,7 @@ async function startServer() {
 
   app.use(cors(options));
   app.use(express.json());
+  app.use(IndexRouter);
   app.use((req: Request, res: Response, next: NextFunction) => {
     const requestStartedAt = Date.now();
 

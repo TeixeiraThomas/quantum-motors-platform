@@ -1,3 +1,18 @@
+- name: Validate gitlab_admin_users are properly configured
+  ansible.builtin.assert:
+    that:
+      - gitlab_admin_users | length > 0
+      - gitlab_admin_users | selectattr('username', 'match', 'intervenant_[0-9]') | list | length == 0
+      - gitlab_admin_users | selectattr('email', 'match', 'intervenant_[0-9]@local.test') | list | length == 0
+    fail_msg: |
+      ERROR: gitlab_admin_users contains placeholder values!
+      Please update ansible/inventories/production/group_vars/all.yml with real usernames and emails.
+      Current placeholders:
+        - username: intervenant_1, intervenant_2
+        - email: intervenant_X@local.test
+      Replace with actual intervenants before proceeding.
+  no_log: false
+
 - name: Configure gitlab.rb
   ansible.builtin.blockinfile:
     path: /etc/gitlab/gitlab.rb

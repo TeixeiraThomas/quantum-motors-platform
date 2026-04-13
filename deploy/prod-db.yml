@@ -18,7 +18,7 @@ services:
     deploy:
       placement:
         constraints:
-          - node.hostname == TIC-CLO5-VM2
+          - node.labels.db-node == true
       resources:
         reservations:
           cpus: "0.25"

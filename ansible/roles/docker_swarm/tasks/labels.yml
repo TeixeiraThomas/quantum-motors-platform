@@ -1,6 +1,14 @@
 - name: Apply configured node labels
   community.docker.docker_node:
-    hostname: "{{ hostvars[item.key].ansible_hostname }}"
+    hostname: "{{ hostvars[item.key].ansible_hostname | default(item.key) }}"
     labels: "{{ item.value }}"
+  loop: "{{ swarm_node_labels | default({}) | dict2items }}"
+  when: inventory_hostname == groups['swarm_managers'][0]
+
+- name: Validate node labels were applied
+  community.docker.docker_node_info:
+    hostname: "{{ hostvars[item.key].ansible_hostname | default(item.key) }}"
+  register: node_info_check
+  failed_when: item.value | dict2items | map(attribute='key') | list | difference(node_info_check.nodes[0].spec.labels.keys() | default([]) | list) | length > 0
   loop: "{{ swarm_node_labels | default({}) | dict2items }}"
   when: inventory_hostname == groups['swarm_managers'][0]
