@@ -1,9 +1,12 @@
 import axios from 'axios';
 import getConfig from 'next/config';
 
-const { publicRuntimeConfig } = getConfig() || {};
+const { publicRuntimeConfig, serverRuntimeConfig } = getConfig() || {};
 
-const API_BASE_URL = publicRuntimeConfig?.apiUrl || 'http://localhost:3000';
+const API_BASE_URL =
+  typeof window === 'undefined'
+    ? serverRuntimeConfig?.apiUrl || publicRuntimeConfig?.apiUrl || 'http://localhost:3000'
+    : publicRuntimeConfig?.apiUrl || 'http://localhost:3000';
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -19,5 +22,9 @@ apiClient.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+export function getApiBaseUrl() {
+  return API_BASE_URL;
+}
 
 export default apiClient;

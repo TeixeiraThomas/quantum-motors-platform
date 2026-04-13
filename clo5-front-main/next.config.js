@@ -9,24 +9,14 @@ const nextConfig = {
   swcMinify: true,
   i18n,
   publicRuntimeConfig: {
-    // Accessible côté client
     apiUrl: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000",
-    environment: process.env.NODE_ENV || "development"
+    environment: process.env.NODE_ENV || "development",
   },
   serverRuntimeConfig: {
-    // Côté serveur seulement
-    apiUrl: process.env.API_URL || "http://localhost:3000"
-  },
-  // Rewrite pour /api/*
-  async rewrites() {
-    return {
-      beforeFiles: [
-        {
-          source: "/api/:path*",
-          destination: `${process.env.API_URL || "http://localhost:3000"}/api/:path*`
-        }
-      ]
-    };
+    apiUrl:
+      process.env.API_URL_INTERNAL ||
+      process.env.API_URL ||
+      "http://localhost:3000",
   },
   webpack(config) {
     config.plugins.push(new StylelintPlugin());

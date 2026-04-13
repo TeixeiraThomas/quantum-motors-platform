@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import Joi from "joi";
 import { finishSchema } from "../Entity/Finish";
 import { ValidatorResponse } from "../Type/All";
@@ -57,16 +58,28 @@ export class FinishService extends BaseService {
    */
   public async create(req: any): Promise<any> {
     const prisma = PrismaConnection.getInstance();
-    return await prisma.finish.create({
-      data: {
-        name: req.name,
-        description: req.description,
-        price: req.price,
-        models: {
-          connect: req.models.map((modelId: number) => ({ id: modelId })),
+    const models = req.models ?? [];
+
+    return await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const finish = await tx.finish.create({
+        data: {
+          name: req.name,
+          description: req.description,
+          price: req.price,
         },
-      },
-      select: finishSchema,
+      });
+
+      return await tx.finish.update({
+        where: {
+          id: finish.id,
+        },
+        data: {
+          models: {
+            connect: models.map((modelId: number) => ({ id: modelId })),
+          },
+        },
+        select: finishSchema,
+      });
     });
   }
 
