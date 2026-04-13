@@ -5,10 +5,37 @@
   loop: "{{ swarm_node_labels | default({}) | dict2items }}"
   when: inventory_hostname == groups['swarm_managers'][0]
 
-- name: Validate node labels were applied
-  community.docker.docker_node_info:
-    hostname: "{{ hostvars[item.key].ansible_hostname | default(item.key) }}"
+- name: Inspect applied node labels
+  ansible.builtin.command:
+    argv:
+      - docker
+      - node
+      - inspect
+      - --format
+      - "{{ '{{json .Spec.Labels}}' }}"
+      - "{{ hostvars[item.key].ansible_hostname | default(item.key) }}"
   register: node_info_check
-  failed_when: item.value | dict2items | map(attribute='key') | list | difference(node_info_check.nodes[0].spec.labels.keys() | default([]) | list) | length > 0
+  changed_when: false
   loop: "{{ swarm_node_labels | default({}) | dict2items }}"
+  when: inventory_hostname == groups['swarm_managers'][0]
+
+- name: Validate node labels were applied
+  ansible.builtin.assert:
+    that:
+      - >-
+        (
+          item.stdout
+          | from_json
+          | default({})
+          | dict2items
+          | map(attribute='key')
+          | list
+        )
+          | difference(item.item.value | dict2items | map(attribute='key') | list)
+          | length == 0
+    fail_msg: >-
+      Missing expected labels on {{ item.item.key }}.
+      Expected: {{ item.item.value | to_json }}
+      Actual: {{ item.stdout }}
+  loop: "{{ node_info_check.results | default([]) }}"
   when: inventory_hostname == groups['swarm_managers'][0]

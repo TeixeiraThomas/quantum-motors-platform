@@ -1,3 +1,5 @@
+version: "3.9"
+
 services:
   api-prod-blue:
     image: ${CI_REGISTRY_IMAGE}/backend:${IMAGE_TAG}

@@ -51,6 +51,7 @@
     owner: root
     group: root
     mode: "0644"
+  register: logging_stack_definition
 
 - name: Copy Loki configuration
   ansible.builtin.copy:
@@ -59,6 +60,7 @@
     owner: root
     group: root
     mode: "0644"
+  register: logging_loki_configuration
 
 - name: Copy Alloy configuration
   ansible.builtin.copy:
@@ -67,6 +69,7 @@
     owner: root
     group: root
     mode: "0644"
+  register: logging_alloy_configuration
 
 - name: Copy Grafana datasource configuration
   ansible.builtin.copy:
@@ -75,6 +78,59 @@
     owner: root
     group: root
     mode: "0644"
+  register: logging_grafana_datasource_configuration
+
+- name: Compute desired logging deployment hash
+  ansible.builtin.shell: >-
+    sha256sum
+    /opt/quantum-motors/deploy/logging.yml
+    /opt/quantum-motors/deploy/logging/loki-config.yml
+    /opt/quantum-motors/deploy/logging/config.alloy
+    /opt/quantum-motors/deploy/logging/grafana-datasource.yml
+    | sha256sum
+    | awk '{print $1}'
+  register: logging_deployment_hash
+  changed_when: false
+
+- name: Check current logging deployment hash
+  ansible.builtin.stat:
+    path: /opt/quantum-motors/deploy/logging/.deployment-hash
+  register: logging_deployment_hash_file
+
+- name: Read current logging deployment hash
+  ansible.builtin.slurp:
+    path: /opt/quantum-motors/deploy/logging/.deployment-hash
+  register: logging_applied_hash
+  when: logging_deployment_hash_file.stat.exists
+
+- name: Determine whether logging stack must be recreated
+  ansible.builtin.set_fact:
+    logging_stack_recreate_required: >-
+      {{
+        (not logging_deployment_hash_file.stat.exists)
+        or ((logging_applied_hash.content | default('') | b64decode | trim) != (logging_deployment_hash.stdout | trim))
+      }}
+
+- name: Recreate logging stack when Swarm configs changed
+  community.docker.docker_stack:
+    state: absent
+    name: "{{ logging_stack_name }}"
+  when: logging_stack_recreate_required
+
+- name: Wait for logging stack removal
+  ansible.builtin.command:
+    argv:
+      - docker
+      - stack
+      - ls
+      - --format
+      - "{{ '{{.Name}}' }}"
+  register: logging_stack_list
+  changed_when: false
+  retries: 30
+  delay: 2
+  until: logging_stack_name not in logging_stack_list.stdout_lines
+  when: logging_stack_recreate_required
 
 - name: Deploy logging stack
   community.docker.docker_stack:
@@ -82,3 +138,11 @@
     name: "{{ logging_stack_name }}"
     compose:
       - /opt/quantum-motors/deploy/logging.yml
+
+- name: Persist logging deployment hash
+  ansible.builtin.copy:
+    content: "{{ logging_deployment_hash.stdout | trim }}\n"
+    dest: /opt/quantum-motors/deploy/logging/.deployment-hash
+    owner: root
+    group: root
+    mode: "0644"
