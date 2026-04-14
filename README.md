@@ -4,6 +4,7 @@ Ce depot contient l'infrastructure, les applications et la documentation du proj
 
 ## Documentation
 
+- [Guide debutant complet - comprendre, verifier et presenter le projet](./docs/PROC-06-guide-debutant-complet.md)
 - [Documentation technique vivante - Etape 0-bis](./docs/etape-0bis-documentation-technique.md)
 - [Schema d'infrastructure mis a jour](./docs/etape-0bis-schema-infrastructure.md)
 - [Schema historique stage 0 - Draw.io](./docs/etape-0-schema-infrastructure-quantum-motors.drawio)
@@ -11,9 +12,10 @@ Ce depot contient l'infrastructure, les applications et la documentation du proj
 
 ## Parcours de lecture recommande
 
-1. Lire le schema d'infrastructure courant pour comprendre la repartition des VMs et des flux.
-2. Lire la documentation technique vivante pour les choix d'architecture, les variables, les procedures et la validation.
-3. Consulter ensuite `ansible/`, `deploy/` et `.gitlab-ci.yml`, qui sont la source de verite executable du projet.
+1. Lire le guide debutant complet pour comprendre le projet sans prerequis.
+2. Lire ensuite le schema d'infrastructure courant pour visualiser la repartition des VMs et des flux.
+3. Lire la documentation technique vivante pour les choix d'architecture, les variables, les procedures et la validation.
+4. Consulter enfin `ansible/`, `deploy/` et `.gitlab-ci.yml`, qui sont la source de verite executable du projet.
 
 ## Contenu du depot
 
