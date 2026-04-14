@@ -1,3 +1,17 @@
+workflow:
+  rules:
+    - changes:
+        - .gitlab-ci.yml
+        - ansible/**/*
+        - clo5-backend-master/**/*
+        - clo5-front-main/**/*
+        - deploy/**/*
+        - docker/**/*
+        - tests/**/*
+        - compose.yml
+      when: always
+    - when: never
+
 stages:
   - test
   - build
