@@ -1,30 +1,67 @@
 # Etape 0-bis - Documentation technique vivante
 
-Etat documente le `2026-04-09`.
+Document datée le `2026-04-09`, mise à jour le `2026-04-13`.
 
-## 1. Perimetre
+## 0. Synthèse executive
 
-Cette documentation accompagne les etapes d'infrastructure et de CI/CD. Elle decrit l'etat reel du depot et de l'infrastructure au moment de la mise a jour, afin qu'un tiers puisse comprendre l'architecture et la reproduire.
+Cette étape documente les réalisations de l'infrastructure et les choix techniques pour le projet Quantum Motors. 
 
-## 1-bis. Documentation vivante
+### Ce qui a été réalisé (Étape 2)
 
-### Objectif
+L'infrastructure CI/CD et de déploiement a été mise en place avec:
 
-- fournir un etat de reference a jour pour la soutenance et pour un tiers qui reprendrait le projet
-- centraliser les choix techniques, la topologie, les procedures et les dependances
-- eviter l'ecart entre ce qui est documente et ce qui est effectivement deploye
+- **Automatisation complète par Ansible**: provisioning de Docker, initialisation Swarm, configuration Traefik, installation GitLab, enregistrement runners
+- **Chaîne CI/CD fonctionnelle**: tests, build, déploiement en préproduction, smoke tests, déploiement blue/green en production
+- **Observabilité**: collecte de logs centralisée via Loki et Grafana Alloy sur tous les nœuds
+- **Stockage persistant**: MariaDB sur volumes NFS, séparation préproduction/production
+- **Sécurité des secrets**: utilisation Ansible Vault pour les credentials
 
-### Regles de maintenance
+### Etat actuel de l'infrastructure
 
-La documentation doit etre mise a jour a chaque evolution significative:
+L'infrastructure live comprend:
 
-- ajout, suppression ou deplacement d'un service
-- changement de role d'une VM
+- **3 VMs cluster Swarm** (vm1, vm2, vm3) avec 2 vCPU / 4 Go RAM
+- **1 VM GitLab** (vm4) hebergee hors cluster
+- **Réseaux overlay découpés**: `public` (exposition), `preprod_net`, `prod_net`, `logs_net`
+- **Services opérationnels**: Traefik (reverse proxy), MariaDB (préproduction/production), SonarQube, Loki+Grafana (logs), runners GitLab
+- **Validation**: tous les playbooks Ansible rejouables avec succès, tests unitaires backend OK (41/41), linting frontend OK
+
+Point restant à valider: exécution d'une vraie pipeline GitLab avec déploiement applicatif complet et remontée des logs en production.
+
+### Choix techniques justifiés
+
+Les principaux choix répondent à des contraintes du module ou à des nécessités d'opérations:
+
+1. **Docker Swarm** plutôt que Kubernetes: simplicité opérationnelle sur 3 VMs sans cluster externe
+2. **Traefik** pour reverse proxy/load-balancing: routage par labels Docker, facilité du blue/green
+3. **Loki + Alloy** pour logs: collecte légère sans modifier les applications, consommation réseau optimisée
+4. **NFS pour MariaDB**: séparation volume préproduction/production, facilité du backup
+5. **GitLab hors cluster**: respect des consignes du module
+6. **Ansible pour automatisation**: idempotence garantie, roles rejouables sans divergence
+
+Voir section 3 pour le detail de chaque choix.
+
+## 1. Périmètre et maintenance
+
+Cette documentation accompagne les étapes d'infrastructure et de CI/CD. Elle décrit l'état réel du dépôt et de l'infrastructure au moment de la mise à jour, afin qu'un tiers puisse comprendre l'architecture et la reproduire.
+
+### Objectif de cette documentation
+
+- fournir un état de référence à jour pour la soutenance et pour un tiers qui reprendrait le projet
+- centraliser les choix techniques, la topologie, les procédures et les dépendances
+- éviter l'écart entre ce qui est documenté et ce qui est effectivement déployé
+
+### Règles de maintenance
+
+La documentation doit être mise à jour à chaque évolution significative:
+
+- ajout, suppression ou déplacement d'un service
+- changement de rôle d'une VM
 - changement de reseau, volume, domaine, registry ou reverse proxy
 - changement du pipeline CI/CD ou des procedures Ansible
 - changement des variables requises pour reproduire le projet
 
-### Source de verite
+### Sources de verite
 
 Les artefacts suivants sont consideres comme les sources de verite du projet:
 
@@ -37,36 +74,36 @@ Les artefacts suivants sont consideres comme les sources de verite du projet:
 | Tests fonctionnels | `tests/functional/` |
 | Documentation courante | `docs/etape-0bis-*.md` |
 
-## 2. Historique des evolutions
+## 2. Historique des évolutions
 
-| Etape | Evolution | Impact |
+| Étape | Évolution | Impact |
 | --- | --- | --- |
-| `Etape 0` | Schema initial du projet | Base de l'architecture cible |
-| `Etape 1` | Swarm, SonarQube, GitLab bare metal | Infrastructure de base automatisee par Ansible |
-| `Etape 2` | Traefik, runners GitLab, pipeline CI/CD, blue/green, NFS, Loki, Grafana, Alloy | Chaine de build, de deploiement et d'observabilite continue |
+| `Étape 0` | Schéma initial du projet | Base de l'architecture cible |
+| `Étape 1` | Swarm, SonarQube, GitLab bare metal | Infrastructure de base automatisée par Ansible |
+| `Étape 2` | Traefik, runners GitLab, pipeline CI/CD, blue/green, NFS, Loki, Grafana, Alloy | Chaîne de build, de déploiement et d'observabilité continue |
 
 ## 3. Choix techniques
 
 ### Orchestrateur
 
-- `Docker Swarm` a ete retenu pour rester simple a deployer et a operer sur `3` VMs tout en supportant overlay networks, services replicas et blue/green.
+- `Docker Swarm` a été retenu pour rester simple à déployer et à opérer sur `3` VMs tout en supportant overlay networks, services replicas et blue/green.
 
 ### Automatisation
 
-- `Ansible` pilote la creation du cluster, la configuration des hotes, l'installation de GitLab, le deploiement de Traefik et l'enregistrement des runners.
-- Le role `docker_swarm` reste generique: reseaux et labels de noeuds proviennent uniquement de variables d'inventaire, sans logique metier hardcodee dans le role.
+- `Ansible` pilote la création du cluster, la configuration des hôtes, l'installation de GitLab, le déploiement de Traefik et l'enregistrement des runners.
+- Le rôle `docker_swarm` reste générique: réseaux et labels de nœuds proviennent uniquement de variables d'inventaire, sans logique métier hardcodée dans le rôle.
 
-### Entree HTTP
+### Entr\u00e9e HTTP
 
-- `Traefik` est utilise comme reverse proxy et load balancer.
-- Le choix permet un routage par labels Docker et facilite le passage `blue -> green` sans reconfigurer la machine hote.
+- `Traefik` est utilisé comme reverse proxy et load balancer.
+- Le choix permet un routage par labels Docker et facilite le passage `blue -> green` sans reconfigurer la machine hôte.
 
 ### Collecte de logs
 
 - `Loki` centralise les logs d'execution des conteneurs du cluster.
 - `Grafana Alloy` tourne en mode `global` sur tous les noeuds Swarm et collecte les logs via l'API Docker locale.
 - `Grafana` expose une interface de consultation sur `logs.quantum.local`.
-- `Alloy` a ete retenu a la place de `Promtail` car `Promtail` est desormais en fin de vie.
+- `Alloy` a été retenu à la place de `Promtail` car `Promtail` est désormais en fin de vie.
 - Cette approche couvre les logs applicatifs, les logs Traefik et les logs des services d'infrastructure sans modifier les applications.
 
 ### CI/CD
@@ -90,16 +127,16 @@ Le schema mis a jour est disponible dans [`etape-0bis-schema-infrastructure.md`]
 
 ### Repartition des roles
 
-| Hote | Adresse | Role |
+| Hôte | Adresse | Rôle |
 | --- | --- | --- |
 | `vm1` | `172.16.248.64` | manager Swarm, Traefik, export NFS, runner |
 | `vm2` | `172.16.248.92` | worker Swarm, MariaDB, runner |
 | `vm3` | `172.16.248.97` | worker Swarm, SonarQube, Loki, Grafana, runner |
 | `vm4` | `172.16.248.236` | GitLab CE, registry GitLab |
 
-### Reseaux
+### Réseaux
 
-Les reseaux overlay definis dans [`ansible/inventories/production/group_vars/all.yml`](../ansible/inventories/production/group_vars/all.yml) sont:
+Les réseaux overlay définis dans [`ansible/inventories/production/group_vars/all.yml`](../ansible/inventories/production/group_vars/all.yml) sont:
 
 - `public`
 - `preprod_net`
@@ -109,11 +146,11 @@ Les reseaux overlay definis dans [`ansible/inventories/production/group_vars/all
 Usage:
 
 - `public`: exposition via Traefik
-- `preprod_net`: services applicatifs de preproduction + MariaDB preprod
+- `preprod_net`: services applicatifs de préproduction + MariaDB preprod
 - `prod_net`: services applicatifs blue/green + MariaDB prod
 - `logs_net`: trafic entre `Alloy`, `Loki` et `Grafana`
 
-Les services exposes via Traefik definissent explicitement `traefik.docker.network=public` pour eviter que Traefik selectionne un reseau applicatif prive sur les conteneurs multi-reseaux.
+Les services exposés via Traefik définissent explicitement `traefik.docker.network=public` pour éviter que Traefik sélectionne un réseau applicatif privé sur les conteneurs multi-réseaux.
 
 ### Stockage
 
@@ -121,10 +158,10 @@ Les services exposes via Traefik definissent explicitement `traefik.docker.netwo
 - export preprod: `/srv/nfs/quantum-motors/preprod/mariadb`
 - export prod: `/srv/nfs/quantum-motors/prod/mariadb`
 - stockage Loki: `/srv/loki`
-- etat Alloy par noeud: `/srv/alloy`
+- état Alloy par nœud: `/srv/alloy`
 - stockage Grafana logs: `/srv/grafana`
 
-Les manifests concernes sont:
+Les manifests concernés sont:
 
 - [`deploy/preprod.yml`](../deploy/preprod.yml)
 - [`deploy/prod-db.yml`](../deploy/prod-db.yml)
@@ -132,19 +169,19 @@ Les manifests concernes sont:
 
 ### Matrice des services
 
-| Service | Emplacement | Exposition | Source de deploiement |
+| Service | Emplacement | Exposition | Source de déploiement |
 | --- | --- | --- | --- |
 | `Docker Swarm manager` | `vm1` | interne cluster | `ansible/playbooks/infrastructure.yml` |
 | `Traefik` | `vm1` | HTTP `*:80` | `deploy/traefik.yml` |
-| `MariaDB preprod/prod` | `vm2` | reseaux prives Swarm | `deploy/preprod.yml`, `deploy/prod-db.yml` |
-| `SonarQube` | `vm3` | port `9000` inter-noeuds | role `SonarQube` |
+| `MariaDB preprod/prod` | `vm2` | réseaux privés Swarm | `deploy/preprod.yml`, `deploy/prod-db.yml` |
+| `SonarQube` | `vm3` | port `9000` inter-nœuds | rôle `SonarQube` |
 | `Loki` | `vm3` | port `3100` interne/ops | `deploy/logging.yml` |
 | `Grafana logs` | `vm3` | `logs.quantum.local` | `deploy/logging.yml` |
 | `GitLab CE` | `vm4` | `http://172.16.248.236` | `ansible/playbooks/gitlab.yml` |
 | `GitLab Registry` | `vm4` | `http://172.16.248.236:5050` | `install_gitlab` |
-| `GitLab Runner` | `vm1`, `vm2`, `vm3` | execution CI interne | `ansible/playbooks/runners.yml` |
+| `GitLab Runner` | `vm1`, `vm2`, `vm3` | exécution CI interne | `ansible/playbooks/runners.yml` |
 
-## 5. Applications et dependances
+## 5. Applications et dépendances
 
 ### Backend
 
@@ -172,11 +209,11 @@ Les manifests concernes sont:
 ### Flux inter-services
 
 1. Le navigateur appelle `front.quantum.local` ou `preprod.quantum.local`.
-2. Traefik route la requete vers le service frontend sur `public`.
+2. Traefik route la requête vers le service frontend sur `public`.
 3. Le frontend appelle `/api/...`.
 4. Le proxy Next.js route vers `API_URL_INTERNAL`.
-5. Le backend accede a MariaDB via `preprod_net` ou `prod_net`.
-6. Les logs des conteneurs sont lus localement par `Alloy`, pousses vers `Loki` via `logs_net`, puis consultables dans `Grafana`.
+5. Le backend accède à MariaDB via `preprod_net` ou `prod_net`.
+6. Les logs des conteneurs sont lus localement par `Alloy`, poussés vers `Loki` via `logs_net`, puis consultables dans `Grafana`.
 
 ## 6. GitLab, registry et runners
 
@@ -186,11 +223,11 @@ Les manifests concernes sont:
 - role principal: `install_gitlab`
 - URL applicative: `http://172.16.248.236`
 - registry: `http://172.16.248.236:5050`
-- les noeuds Swarm declarent cette registry comme `insecure registry` dans la configuration Docker
+- les nœuds Swarm déclarent cette registry comme `insecure registry` dans la configuration Docker
 
 ### Secrets Ansible
 
-Les secrets ne sont pas stockes en clair dans les roles.
+Les secrets ne sont pas stockés en clair dans les rôles.
 
 Variables sensibles attendues:
 
@@ -203,14 +240,14 @@ Variables d'infrastructure importantes:
 - `swarm_node_labels`
 - `overlay_networks`
 - `sonarqube_resources`
-- `gitlab_admin_users` doit etre renseigne avec les vrais logins des intervenants avant l'execution de `gitlab.yml`
+- `gitlab_admin_users` doit être renseigné avec les vrais logins des intervenants avant l'exécution de `gitlab.yml`
 
 ### Runners
 
 - playbook: [`ansible/playbooks/runners.yml`](../ansible/playbooks/runners.yml)
 - role: [`ansible/roles/gitlab_runner`](../ansible/roles/gitlab_runner)
 - image runner: `gitlab/gitlab-runner:alpine`
-- image docker par defaut: `docker:24.0.7`
+- image docker par défaut: `docker:24.0.7`
 
 Tags deployes:
 
@@ -241,13 +278,13 @@ Le pipeline GitLab est defini dans [`/.gitlab-ci.yml`](../.gitlab-ci.yml).
 
 1. tests backend et lint front/backend
 2. build et push des images `backend` et `frontend`
-3. deploiement de `preprod` avec remise a zero du stockage MariaDB puis initialisation par le SQL de catalogue
+3. déploiement de `preprod` avec remise à zéro du stockage MariaDB puis initialisation par le SQL de catalogue
 4. smoke tests HTTP sur `preprod.quantum.local` et `api-preprod.quantum.local`
-5. deploiement de la base `prod-db`, puis de `prod-green`
+5. déploiement de la base `prod-db`, puis de `prod-green`
 6. smoke tests HTTP sur `front-green.quantum.local` et `api-green.quantum.local`
 7. bascule des domaines stables vers `prod-green` via `prod-green-live.yml`, puis suppression de la stack `prodgreen`
 
-### Manifests de deploiement
+### Manifests de déploiement
 
 - Traefik: [`deploy/traefik.yml`](../deploy/traefik.yml)
 - Logging: [`deploy/logging.yml`](../deploy/logging.yml)
@@ -260,7 +297,7 @@ Le pipeline GitLab est defini dans [`/.gitlab-ci.yml`](../.gitlab-ci.yml).
 
 ### Variables CI attendues
 
-Variables GitLab CI a definir dans le projet:
+Variables GitLab CI à définir dans le projet:
 
 - `CI_REGISTRY_USER`
 - `CI_REGISTRY_PASSWORD`
@@ -272,40 +309,40 @@ Variables GitLab CI a definir dans le projet:
 - `PROD_DB_PASSWORD`
 - `BACKEND_ADMIN_PASSWORD`
 
-Les jobs de build peuvent utiliser les credentials CI GitLab natifs. Les jobs de deploiement Swarm utilisent un credential registry durable afin que les noeuds puissent re-pull les images apres la fin du job CI.
+Les jobs de build peuvent utiliser les credentials CI GitLab natifs. Les jobs de déploiement Swarm utilisent un credential registry durable afin que les nœuds puissent re-pull les images après la fin du job CI.
 
-## 8. Procedures de deploiement
+## 8. Procédures de déploiement
 
-### Pre-requis de reproduction
+### Pré-requis de reproduction
 
 Machine d'administration:
 
-- `Ansible` installe localement
-- acces SSH aux `4` VMs
-- acces au fichier Vault ou aux secrets equivalentes
+- `Ansible` installé localement
+- accès SSH aux `4` VMs
+- accès au fichier Vault ou aux secrets équivalentes
 - client Docker disponible si vous souhaitez valider localement les manifests avec `docker compose config`
 
-Pre-requis reseau:
+Pré-requis réseau:
 
-- resolution locale des domaines `*.quantum.local`, par exemple via `/etc/hosts`, vers l'IP exposee par `Traefik`
-- acces HTTP a `vm4` pour l'instance GitLab
+- résolution locale des domaines `*.quantum.local`, par exemple via `/etc/hosts`, vers l'IP exposée par `Traefik`
+- accès HTTP à `vm4` pour l'instance GitLab
 
-Pre-requis depot:
+Pré-requis dépôt:
 
-- inventaire `ansible/inventories/production/hosts.yml` renseigne
-- variables `group_vars/all.yml` renseignees
+- inventaire `ansible/inventories/production/hosts.yml` renseigné
+- variables `group_vars/all.yml` renseignées
 - variables sensibles `group_vars/vault.yml` disponibles
-- placeholders `gitlab_admin_users` remplaces par les vrais logins des intervenants
+- placeholders `gitlab_admin_users` remplacés par les vrais logins des intervenants
 
 ### Ordre minimal de reproduction
 
 1. Configurer l'inventaire et les variables Ansible.
-2. Executer `ansible-playbook playbooks/infrastructure.yml`.
-3. Executer `ansible-playbook playbooks/gitlab.yml`.
-4. Recuperer le token d'enregistrement GitLab Runner.
-5. Executer `ansible-playbook playbooks/runners.yml`.
-6. Declarer les variables CI/CD du projet GitLab.
-7. Pousser un commit sur la branche attendue pour lancer la chaine CI/CD.
+2. Exécuter `ansible-playbook playbooks/infrastructure.yml`.
+3. Exécuter `ansible-playbook playbooks/gitlab.yml`.
+4. Récupérer le token d'enregistrement GitLab Runner.
+5. Exécuter `ansible-playbook playbooks/runners.yml`.
+6. Déclarer les variables CI/CD du projet GitLab.
+7. Pousser un commit sur la branche attendue pour lancer la chaîne CI/CD.
 
 ### Provisionner le cluster
 
@@ -319,11 +356,11 @@ Ce playbook:
 
 - installe Docker sur `vm1`, `vm2`, `vm3`
 - initialise Swarm
-- cree les reseaux overlay
-- prepare NFS
-- deploie Traefik
-- deploie `Loki`, `Grafana` et `Grafana Alloy`
-- deploie SonarQube
+- crée les réseaux overlay
+- prépare NFS
+- déploie Traefik
+- déploie `Loki`, `Grafana` et `Grafana Alloy`
+- déploie SonarQube
 
 ### Installer GitLab sur VM4
 
@@ -331,7 +368,7 @@ Ce playbook:
 ansible-playbook playbooks/gitlab.yml
 ```
 
-### Deployer les runners GitLab
+### Déployer les runners GitLab
 
 ```bash
 ansible-playbook playbooks/runners.yml
@@ -339,23 +376,23 @@ ansible-playbook playbooks/runners.yml
 
 Pre-requis:
 
-- `vault_gitlab_runner_registration_token` doit etre defini
+- `vault_gitlab_runner_registration_token` doit être défini
 
 ### Lancer la stack locale
 
-Depuis la racine du depot:
+Depuis la racine du dépôt:
 
 ```bash
 docker compose up --build -d
 ```
 
-La stack locale sert au developpement et a la validation rapide de l'application, independamment du cluster.
+La stack locale sert au développement et à la validation rapide de l'application, indépendamment du cluster.
 
 ## 9. Tests et validation
 
-### Validation depot
+### Validation dépôt
 
-Validation realisee le `2026-04-04`:
+Validation réalisée le `2026-04-04`:
 
 - build frontend: OK
 - lint frontend: OK
@@ -368,31 +405,33 @@ Validation realisee le `2026-04-04`:
 
 ### Validation live
 
-Validation live realisee le `2026-04-04`:
+Validation live réalisée le `2026-04-04`:
 
-- `infrastructure.yml` rejoue avec succes sur `vm1`, `vm2`, `vm3`
-- `runners.yml` rejoue avec succes sur `vm1`, `vm2`, `vm3`
+- `infrastructure.yml` rejogué avec succès sur `vm1`, `vm2`, `vm3`
+- `runners.yml` rejoué avec succès sur `vm1`, `vm2`, `vm3`
 - runners GitLab actifs:
   - `vm1-runner`
   - `vm2-runner`
   - `vm3-runner`
 
-Point encore a faire pour la validation finale etape 2:
+Point encore à faire pour la validation finale étape 2:
 
-- executer un vrai pipeline GitLab sur un commit pousse
-- verifier les deploiements applicatifs live en preprod et en production green
-- verifier en environnement reel la remontee des logs dans `Loki` et leur consultation dans `Grafana` apres deploiement du role `logging_stack`
+- exécuter un vrai pipeline GitLab sur un commit poussé
+- vérifier les déploiements applicatifs live en préprod et en production green
+- vérifier en environnement réel la remontée des logs dans `Loki` et leur consultation dans `Grafana` après déploiement du rôle `logging_stack`
 
-## 10. Checklist de demande de validation
+## 10. Validation et points de controle
 
-Avant chaque demande de validation, verifier au minimum:
+### Avant chaque demande de validation
 
-- le schema `etape-0bis-schema-infrastructure.md` reflete bien l'etat reel
-- les nouvelles VMs, roles, ports, domaines, reseaux et volumes sont documentes
-- les nouvelles variables et secrets attendus sont listes
-- la procedure de reproduction a ete ajustee si necessaire
-- les manifests ou playbooks modifies ont ete validates localement quand c'est possible
-- les ecarts restants ou points non verifies sont explicitement notes
+Les points de contrôle à vérifier sont:
+
+- le schéma `etape-0bis-schema-infrastructure.md` reflète bien l'état réel
+- les nouvelles VMs, rôles, ports, domaines, réseaux et volumes sont documentés
+- les nouvelles variables et secrets attendus sont listés
+- la procédure de reproduction a été ajustée si nécessaire
+- les manifests ou playbooks modifiés ont été validés localement quand c'est possible
+- les écarts restants ou points non vérifiés sont explicitement notés
 
 ## 11. Arborescence utile
 
@@ -414,30 +453,30 @@ Quantum-Motors/
 
 - `GitLab` reste volontairement hors cluster pour respecter les consignes du module.
 - Les mots de passe et tokens doivent rester dans `Ansible Vault` ou dans les variables GitLab CI.
-- Les manifests `prod-blue-live.yml` et `prod-green-live.yml` sont les seuls a porter les domaines stables `front.quantum.local` et `api.quantum.local`.
-- Les services MariaDB Swarm montent le SQL de catalogue au premier demarrage pour disposer de donnees fonctionnelles en preprod et en prod. Ce SQL inclut aussi l'etat attendu de `_prisma_migrations`.
-- Le frontend ne doit pas etre rebuild par environnement pour changer l'URL backend: le proxy `/api` evite ce couplage.
-- `Grafana Alloy` lit les logs Docker via le socket local de chaque noeud et les enrichit avec les labels Swarm avant envoi vers `Loki`.
-- L'acces anonyme a `Grafana` est acceptable pour le POC interne, mais doit etre remplace par une authentification avant une mise en production reelle.
+- Les manifests `prod-blue-live.yml` et `prod-green-live.yml` sont les seuls à porter les domaines stables `front.quantum.local` et `api.quantum.local`.
+- Les services MariaDB Swarm montent le SQL de catalogue au premier démarrage pour disposer de données fonctionnelles en préprod et en prod. Ce SQL inclut aussi l'état attendu de `_prisma_migrations`.
+- Le frontend ne doit pas être rebuild par environnement pour changer l'URL backend: le proxy `/api` évite ce couplage.
+- `Grafana Alloy` lit les logs Docker via le socket local de chaque nœud et les enrichit avec les labels Swarm avant envoi vers `Loki`.
+- L'accès anonyme à `Grafana` est acceptable pour le POC interne, mais doit être remplacé par une authentification avant une mise en production réelle.
 
-## 13. Procedures de reproduction
+## 13. Procédures de reproduction
 
-Les fichiers `docs/PROC-*.md` contiennent les procedures **pas-a-pas** pour reproduire l'infrastructure complete.
+Les fichiers `docs/PROC-*.md` contiennent les procédures **pas-à-pas** pour reproduire l'infrastructure complète.
 
-### Index des procedures
+### Index des procédures
 
-| # | Fichier | Titre | Duree | Prerequis | Objectif |
+| # | Fichier | Titre | Durée | Prérequis | Objectif |
 |---|---------|-------|-------|-----------|----------|
-| 0 | [PROC-00-check-prerequisites.md](../PROC-00-check-prerequisites.md) | Verifier les prerequis system | 15 min | Poste local | Valider VMs, reseau, Ansible |
-| 1 | [PROC-01-vault-setup.md](../PROC-01-vault-setup.md) | Initialisation Ansible Vault | 10 min | Ansible installe | Configurer les secrets |
+| 0 | [PROC-00-check-prerequisites.md](../PROC-00-check-prerequisites.md) | Vérifier les prérequis système | 15 min | Poste local | Valider VMs, réseau, Ansible |
+| 1 | [PROC-01-vault-setup.md](../PROC-01-vault-setup.md) | Initialisation Ansible Vault | 10 min | Ansible installé | Configurer les secrets |
 | 2 | [PROC-02-gitlab-runner-token.md](../PROC-02-gitlab-runner-token.md) | Obtenir token GitLab Runner | 15 min | VM4 GitLab active | Enregistrer runners Swarm |
-| 3 | [PROC-03-gitlab-ci-variables.md](../PROC-03-gitlab-ci-variables.md) | Variables CI/CD GitLab | 20 min | Depot GitLab cree | Configurer la pipeline |
-| 4 | [PROC-04-hosts-setup.md](../PROC-04-hosts-setup.md) | DNS local /etc/hosts | 10 min | Acces reseau | Resoudre domaines *.quantum.local |
+| 3 | [PROC-03-gitlab-ci-variables.md](../PROC-03-gitlab-ci-variables.md) | Variables CI/CD GitLab | 20 min | Dépôt GitLab créé | Configurer la pipeline |
+| 4 | [PROC-04-hosts-setup.md](../PROC-04-hosts-setup.md) | DNS local /etc/hosts | 10 min | Accès réseau | Résoudre domaines *.quantum.local |
 | 5 | [PROC-05-cicd-validation.md](../PROC-05-cicd-validation.md) | Validation CI/CD live | 30 min | Tous playbooks OK | Tester build & deploy |
 
-**Flux recommande :**
+**Flux recommandé :**
 
-1. Proc 0 : Verifier prerequis
+1. Proc 0 : Vérifier prérequis
 2. Proc 1 : Configurer Vault
 3. Playbook `infrastructure.yml` (Ansible)
 4. Playbook `gitlab.yml` (Ansible)
@@ -447,49 +486,49 @@ Les fichiers `docs/PROC-*.md` contiennent les procedures **pas-a-pas** pour repr
 8. Proc 4 : Configurer /etc/hosts
 9. Proc 5 : Valider pipeline live
 
-**Temps total :** ~1 heure pour reproduction complete
+**Temps total :** ~1 heure pour reproduction complète
 
-## 14. Modifications recentes (2026-04-13)
+## 14. Modifications récentes (2026-04-13)
 
-### Corrections apportees au depot
+### Corrections apportées au dépôt
 
 #### 1. Labels Swarm (docker_swarm/tasks/labels.yml)
 
-**Probleme :** Utilisation de `ansible_hostname` qui pouvait ne pas matcher les hostnames reels
+**Problème :** Utilisation de `ansible_hostname` qui pouvait ne pas matcher les hostnames réels
 
 **Correction :**
 - Utilisation de `hostvars[item.key].ansible_hostname | default(item.key)` pour robustesse
 - Ajout d'une validation post-application des labels
-- La tache decrit maintenant aussi l'erreur esperee si le matching echoue
+- La tâche décrit maintenant aussi l'erreur espérée si le matching échoue
 
 #### 2. Placement MariaDB (deploy/prod-db.yml)
 
-**Probleme :** Hostname hardcod`TIC-CLO5-VM2` - cassait le placement si hostname different
+**Problème :** Hostname en dur (`TIC-CLO5-VM2`) - cassait le placement si hostname différent
 
 **Correction :**
-- Passage a `node.labels.db-node == true`
+- Passage à `node.labels.db-node == true`
 - Ajout du label `db-node: "true"` pour vm2 dans all.yml
 
 #### 3. Placement MariaDB preprod (deploy/preprod.yml)
 
-**Memeproblem :** Hostname hardcod pour placement
+**Problème :** Hostname en dur pour placement
 
 **Correction :** Idem prod-db.yml - utilisation label `db-node`
 
 #### 4. Validation admin users (install_gitlab/tasks/configure.yml)
 
-**Probleme :** Placeholders `intervenant_1`, `intervenant_2` acceptes sans warning
+**Problème :** Placeholders `intervenant_1`, `intervenant_2` acceptés sans vérification
 
 **Correction :**
-- Assert en debut de `configure.yml`
-- Valide que les placeholders ont ete remplaces par vrais usernames/emails
-- Rejette le playbook si placeholders detectes
+- Assert en début de `configure.yml`
+- Valide que les placeholders ont été remplacés par vrais usernames/emails
+- Rejette le playbook si placeholders détectés
 
 #### 5. Token runner (vault.yml)
 
-**Probleme :** Variable `vault_gitlab_runner_registration_token` manquait
+**Problème :** Variable `vault_gitlab_runner_registration_token` manquait
 
-**Correction :** Ajout de la variable au vault.yml (chiffree)
+**Correction :** Ajout de la variable au vault.yml (chiffrée)
 
 ### Fichiers crees (procedures)
 
