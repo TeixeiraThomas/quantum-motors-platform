@@ -5,4 +5,4 @@
     scope: swarm
     state: present
   loop: "{{ overlay_networks }}"
-  when: inventory_hostname == groups['swarm_managers'][0]
+  when: inventory_hostname == groups[docker_swarm_manager_group][0]

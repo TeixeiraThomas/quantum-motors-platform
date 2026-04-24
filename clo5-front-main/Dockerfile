@@ -21,11 +21,7 @@ FROM node:18-bookworm-slim
 
 WORKDIR /app
 
-RUN corepack enable
-
-COPY package.json yarn.lock ./
-RUN yarn install --frozen-lockfile --production=false
-
+# Reuse the dependencies already installed in the builder stage.
 COPY --from=builder /app ./
 
 ENV NODE_ENV=production
@@ -34,4 +30,4 @@ ENV PORT=4200
 
 EXPOSE 4200
 
-CMD ["yarn", "start"]
+CMD ["node", "node_modules/next/dist/bin/next", "start", "-p", "4200"]

@@ -11,12 +11,13 @@ Ce dossier contient les procédures détaillées pour reproduire l'infrastructur
 
 | # | Procédure | Durée | Prérequis | Objectif |
 |---|-----------|-------|-----------|----------|
-| 0 | [Configuration Ansible Vault](PROC-00-check-prerequisites.md) | 5 min | Poste local | Vérifier prérequis système |
+| 0 | [Vérifier les prérequis système](PROC-00-check-prerequisites.md) | 15 min | Poste local | Vérifier prérequis système |
 | 1 | [Initialisation Ansible Vault](PROC-01-vault-setup.md) | 10 min | Ansible installé | Configurer les secrets |
 | 2 | [Obtenir token GitLab Runner](PROC-02-gitlab-runner-token.md) | 15 min | VM4 GitLab active | Enregistrer runners |
 | 3 | [Variables CI/CD GitLab](PROC-03-gitlab-ci-variables.md) | 20 min | Dépôt GitLab créé | Configurer la pipeline |
 | 4 | [DNS local /etc/hosts](PROC-04-hosts-setup.md) | 10 min | Accès réseau | Résoudre domaines |
 | 5 | [Validation CI/CD live](PROC-05-cicd-validation.md) | 30 min | Tous playbooks OK | Tester build & deploy |
+| 7 | [Fonctionnement via WSL](PROC-07-wsl-workflow.md) | 10 min | WSL installe | Lancer Ansible proprement depuis WSL |
 
 ---
 
@@ -33,7 +34,7 @@ cd Quantum-Motors
 pip install ansible
 
 # 3. Installer les collections Ansible
-ansible-galaxy collection install community.docker
+ansible-galaxy collection install -r ansible/requirements.yml
 
 # 4. Générer le password Ansible Vault
 echo "TON_PASSWORD_SECRET" > ~/.vault_pass
@@ -44,6 +45,27 @@ ANSIBLE_CONFIG=ansible/ansible.cfg ansible-playbook ansible/playbooks/infrastruc
 ANSIBLE_CONFIG=ansible/ansible.cfg ansible-playbook ansible/playbooks/gitlab.yml --syntax-check
 ANSIBLE_CONFIG=ansible/ansible.cfg ansible-playbook ansible/playbooks/runners.yml --syntax-check
 ```
+
+### Variante WSL recommandee
+
+Depuis WSL, lance les commandes via le wrapper du depot. Il configure `ANSIBLE_CONFIG`, `ANSIBLE_ROLES_PATH`, lit le mot de passe Vault depuis `/mnt/c/ETNA/MASTER2/VMS & SERVICES.txt` et cree un fichier temporaire dans `/tmp`.
+
+Note transparence IA : cette section et la procedure WSL dediee ont ete structurees avec l'aide d'un assistant IA pour rendre le mode operatoire plus explicite.
+
+```bash
+cd /mnt/c/ETNA/MASTER2/Quantum-Motors
+
+bash ansible/scripts/wsl-ansible.sh requirements
+bash ansible/scripts/wsl-ansible.sh vault-check
+bash ansible/scripts/wsl-ansible.sh syntax-check
+bash ansible/scripts/wsl-ansible.sh ping
+
+bash ansible/scripts/wsl-ansible.sh infrastructure
+bash ansible/scripts/wsl-ansible.sh gitlab
+bash ansible/scripts/wsl-ansible.sh runners
+```
+
+Note : `runners` peut rejouer sans token si les runners sont deja enregistres sur les VMs. Pour un enregistrement neuf, recupere un nouveau token dans GitLab et remets `vault_gitlab_runner_registration_token` dans Vault avant de lancer la commande.
 
 ### Phase 2 — Infrastructure (VMs)
 
@@ -151,7 +173,7 @@ Avant de lancer les playbooks, vérifie :
 - [ ] Inventaire `ansible/inventories/production/hosts.yml` à jour (IPs, users)
 - [ ] Mots de passe dans `ansible/inventories/production/group_vars/vault.yml`
 - [ ] Variables dans `ansible/inventories/production/group_vars/all.yml` complètes
-- [ ] Placeholder `intervenant_1`, `intervenant_2` remplacés par vrais noms
+- [ ] Comptes `gitlab_admin_users` renseignés avec les vrais logins des intervenants
 - [ ] SSH key setup pour accès passwordless (ou ansible_ask_pass)
 - [ ] 4 VMs Debian 12 opérationnelles avec hostnames uniques
 - [ ] Réseau 172.16.248.0/24 accessible
@@ -228,10 +250,10 @@ docker service update --force preprod_api-preprod
 |----------|---------|
 | [etape-0bis-documentation-technique.md](etape-0bis-documentation-technique.md) | Architecture, choix tech, variables |
 | [etape-0bis-schema-infrastructure.md](etape-0bis-schema-infrastructure.md) | Diagram Mermaid VMs + réseaux |
-| [../../.gitlab-ci.yml](../../.gitlab-ci.yml) | Pipeline CI/CD complète |
-| [../../ansible/playbooks/](../../ansible/playbooks/) | Playbooks Ansible |
-| [../../ansible/roles/](../../ansible/roles/) | Rôles Ansible |
-| [../../deploy/](../../deploy/) | Manifests Docker Swarm |
+| [../.gitlab-ci.yml](../.gitlab-ci.yml) | Pipeline CI/CD complète |
+| [../ansible/playbooks/](../ansible/playbooks/) | Playbooks Ansible |
+| [../ansible/roles/](../ansible/roles/) | Rôles Ansible |
+| [../deploy/](../deploy/) | Manifests Docker Swarm |
 
 ---
 
@@ -299,7 +321,7 @@ Une fois tout validé :
 1. **Archive les secrets** dans un gestionnaire (Bitwarden, Vault, etc.)
 2. **Sauvegarde le Vault password** dans un endroit sûr
 3. **Documenta les changements** dans un changelog
-4. **Prépa la soutenance** (voir [SOUTENANCE.md](SOUTENANCE.md))
+4. **Prépa la soutenance** avec la [documentation technique 0-bis](etape-0bis-documentation-technique.md)
 
 ---
 
@@ -319,13 +341,13 @@ En cas de problème :
 | Elément | Status | Date |
 |---------|--------|------|
 | Syntaxe Ansible | ✅ | 2026-04-13 |
-| Infrastructure complète | ⏳ | À faire |
-| GitLab up | ⏳ | À faire |
+| Infrastructure HTTP live | ✅ | 2026-04-21 |
+| GitLab up | ✅ | 2026-04-21 |
 | Runners registered | ⏳ | À faire |
 | Pipeline develop OK | ⏳ | À faire |
 | Pipeline main OK (blue/green) | ⏳ | À faire |
-| Live test preprod | ⏳ | À faire |
-| Live test prod | ⏳ | À faire |
+| Live test preprod | ✅ | 2026-04-21 |
+| Live test prod | ✅ | 2026-04-21 |
 
 ---
 

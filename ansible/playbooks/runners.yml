@@ -1,5 +1,7 @@
 - name: Deploy GitLab runners
   hosts: swarm_managers:swarm_workers
   become: true
+  vars_files:
+    - ../inventories/production/group_vars/vault.yml
   roles:
     - gitlab_runner

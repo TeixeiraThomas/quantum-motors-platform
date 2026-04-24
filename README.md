@@ -6,6 +6,7 @@ Ce depot contient l'infrastructure, les applications et la documentation du proj
 
 - [Documentation technique vivante - Etape 0-bis](./docs/etape-0bis-documentation-technique.md)
 - [Schema d'infrastructure mis a jour](./docs/etape-0bis-schema-infrastructure.md)
+- [Fonctionnement via WSL](./docs/PROC-07-wsl-workflow.md)
 - [Schema historique stage 0 - Draw.io](./docs/etape-0-schema-infrastructure-quantum-motors.drawio)
 - [Schema historique stage 0 - PNG](./docs/etape-0-schema-infrastructure-quantum-motors.drawio.png)
 
@@ -39,9 +40,40 @@ Avant de lancer `ansible/playbooks/gitlab.yml`, pensez a remplacer les placehold
 
 Toutes les commandes Ansible doivent être exécutées depuis la racine du dépôt avec la configuration appropriée :
 
+### Usage WSL recommande
+
+Depuis WSL, utilise le wrapper du depot. Il lit automatiquement le mot de passe Vault dans `/mnt/c/ETNA/MASTER2/VMS & SERVICES.txt`, juste apres le marqueur `mdp vault`, en ignorant les lignes vides.
+
+Cette section WSL a ete structuree avec l'aide d'un assistant IA afin de rendre le flux reproductible et verifiable. Le detail complet est dans [`docs/PROC-07-wsl-workflow.md`](./docs/PROC-07-wsl-workflow.md).
+
+```bash
+cd /mnt/c/ETNA/MASTER2/Quantum-Motors
+
+bash ansible/scripts/wsl-ansible.sh requirements
+bash ansible/scripts/wsl-ansible.sh vault-check
+bash ansible/scripts/wsl-ansible.sh syntax-check
+bash ansible/scripts/wsl-ansible.sh ping
+
+# Deploiements
+bash ansible/scripts/wsl-ansible.sh infrastructure
+bash ansible/scripts/wsl-ansible.sh gitlab
+bash ansible/scripts/wsl-ansible.sh runners
+```
+
+Note : le token d'enregistrement runner GitLab n'est requis que si `/srv/gitlab-runner/config.toml` n'existe pas encore sur les VMs. Pour recreer des runners depuis zero, recupere un nouveau token GitLab et remets `vault_gitlab_runner_registration_token` dans Vault avec la procedure 2.
+
+Si ton fichier de secrets est ailleurs :
+
+```bash
+QM_SECRETS_FILE=/mnt/c/chemin/vers/secrets.txt bash ansible/scripts/wsl-ansible.sh vault-check
+```
+
+### Commandes manuelles
+
 ```bash
 # Exemple de syntaxe correcte
 cd /mnt/c/ETNA/MASTER2/Quantum-Motors  # ou votre chemin local
+ANSIBLE_CONFIG=ansible/ansible.cfg ansible-galaxy collection install -r ansible/requirements.yml
 ANSIBLE_CONFIG=ansible/ansible.cfg ansible-playbook ansible/playbooks/infrastructure.yml --syntax-check
 ```
 

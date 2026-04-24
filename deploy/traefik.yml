@@ -1,9 +1,10 @@
-version: "3.9"
+version: "3.8"
 
 services:
   traefik:
     image: traefik:v2.11
     command:
+      - --api=true
       - --api.dashboard=true
       - --providers.docker=true
       - --providers.docker.swarmMode=true
@@ -32,9 +33,16 @@ services:
           memory: 256M
       labels:
         - traefik.enable=true
+        - traefik.docker.network=public
         - traefik.http.routers.traefik-dashboard.rule=Host(`traefik.quantum.local`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))
         - traefik.http.routers.traefik-dashboard.entrypoints=web
         - traefik.http.routers.traefik-dashboard.service=api@internal
+        - traefik.http.routers.traefik-dashboard-root.rule=Host(`traefik.quantum.local`) && Path(`/`)
+        - traefik.http.routers.traefik-dashboard-root.entrypoints=web
+        - traefik.http.routers.traefik-dashboard-root.middlewares=traefik-dashboard-redirect
+        - traefik.http.routers.traefik-dashboard-root.service=api@internal
+        - traefik.http.middlewares.traefik-dashboard-redirect.redirectregex.regex=^http://([^/]+)/?$$
+        - traefik.http.middlewares.traefik-dashboard-redirect.redirectregex.replacement=http://$${1}/dashboard/
 
 networks:
   public:
