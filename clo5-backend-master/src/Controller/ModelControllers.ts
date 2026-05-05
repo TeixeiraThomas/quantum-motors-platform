@@ -1,6 +1,8 @@
 import { Model } from "../Entity/Model";
 import { ModelService } from "../Service/ModelService";
 import { ValidatorResponse } from "../Type/All";
+import fs from "node:fs";
+import path from "node:path";
 
 /**
  * @class ModelController
@@ -8,6 +10,28 @@ import { ValidatorResponse } from "../Type/All";
  * @exports ModelController
  */
 export class ModelController {
+  private static resolveModelImageUrl(modelId: number | string) {
+    const supportedExtensions = [".png", ".jpg", ".jpeg", ".webp"];
+    const imagesDir = path.resolve(__dirname, "../../images/models");
+    let fallback = `${process.env.CAR_SERVICE_IMAGE_URL}/images/models/1.png`;
+
+    for (const extension of supportedExtensions) {
+      if (fs.existsSync(path.join(imagesDir, `1${extension}`))) {
+        fallback = `${process.env.CAR_SERVICE_IMAGE_URL}/images/models/1${extension}`;
+        break;
+      }
+    }
+
+    for (const extension of supportedExtensions) {
+      const absoluteFilePath = path.join(imagesDir, `${modelId}${extension}`);
+      if (fs.existsSync(absoluteFilePath)) {
+        return `${process.env.CAR_SERVICE_IMAGE_URL}/images/models/${modelId}${extension}`;
+      }
+    }
+
+    return fallback;
+  }
+
   /**
    * @private
    * @type {ModelService}
@@ -56,9 +80,7 @@ export class ModelController {
   public async list(_: any, res: any): Promise<Model[]> {
     const rs = await this.service.findAll();
     for (let i = 0; i < rs.length; i++) {
-      rs[
-        i
-      ].image = `${process.env.CAR_SERVICE_IMAGE_URL}/images/models/${rs[i].id}.png`;
+      rs[i].image = ModelController.resolveModelImageUrl(rs[i].id);
     }
     return res.status(200).json(rs);
   }

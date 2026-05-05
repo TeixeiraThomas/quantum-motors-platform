@@ -21,6 +21,7 @@ const ConfiguratorFooter = ({
 }: Props) => {
   const { t } = useTranslation(["common", "catalog"]);
   const hasHydrated = useHasHydrated();
+  const modelName = initialModel?.modelName || "Modele";
   const carPrice =
     configuratorValues?.price !== undefined &&
     configuratorValues?.price !== null
@@ -32,7 +33,6 @@ const ConfiguratorFooter = ({
       {hasHydrated && (
         <motion.aside
           className={`${styles["configurator-footer"]}`}
-          style={{ backgroundColor: initialModel?.brandColor }}
           initial={{ y: "100%" }}
           animate={{ y: 0 }}
           transition={{
@@ -42,20 +42,14 @@ const ConfiguratorFooter = ({
         >
           <div className={`${styles["configurator-footer__top"]}`}>
             <div className={`${styles["configurator-footer__text"]}`}>
-              <>
-                <>
-                  {"Quantum"}&nbsp;
-                  {initialModel?.modelName ?? ""}&nbsp;
-                  {t("catalog:for")}&nbsp;
-                  {isLoading ? (
-                    <span className={`inline-block`}>
-                      <Skeleton className={`skeleton__line`} />
-                    </span>
-                  ) : (
-                    <>{carPrice}</>
-                  )}
-                </>
-              </>
+              Quantum {modelName} {t("catalog:for")}{" "}
+              {isLoading ? (
+                <span className={`inline-block`}>
+                  <Skeleton className={`skeleton__line`} />
+                </span>
+              ) : (
+                <>{carPrice}</>
+              )}
             </div>
           </div>
         </motion.aside>

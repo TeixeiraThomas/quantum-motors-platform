@@ -19,7 +19,7 @@ export function Homepage({ modelsData }: { modelsData: any }) {
   });
 
   function setActiveModel(
-    e: React.MouseEvent<HTMLButtonElement>,
+    _e: React.MouseEvent<HTMLElement>,
     modelId: string | number
   ) {
     const selectedModelIndex = models.findIndex(
@@ -36,7 +36,16 @@ export function Homepage({ modelsData }: { modelsData: any }) {
   }, [models, setSelectedModel]);
 
   if (models.length === 0) {
-    return null;
+    return (
+      <section className="flex flex--col justify-content--center align-items--center text--center">
+        <h1>Catalogue temporairement indisponible</h1>
+        <p>
+          Les donnees modeles ne sont pas chargees. Verifie que l API backend
+          est demarree sur <code>http://localhost:3000</code>, puis recharge la
+          page.
+        </p>
+      </section>
+    );
   }
 
   return (

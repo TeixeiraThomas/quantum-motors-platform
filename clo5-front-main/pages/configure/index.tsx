@@ -3,6 +3,7 @@ import LayoutConfigurator from "@/components/global/LayoutConfigurator/LayoutCon
 import ConfiguratorFooter from "@/components/pages/Configure/ConfiguratorFooter";
 import ConfiguratorSelector from "@/components/pages/Configure/ConfiguratorSelector";
 import ConfiguratorSlider from "@/components/pages/Configure/ConfiguratorSlider";
+import { getApiBaseUrl } from "@/lib/api";
 import { QueryClient, dehydrate } from "@tanstack/react-query";
 import { fetchConfigure, useConfigure } from "hooks";
 import { GetServerSideProps } from "next";
@@ -13,6 +14,35 @@ import { ReactElement, useCallback, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { ChoicesConfiguration, InitialModel, Status } from "types/catalogTypes";
 import styles from "../../components/global/LayoutConfigurator/LayoutConfigurator.module.scss";
+
+const buildModelImageCandidates = (modelId?: string | number) => {
+  if (!modelId) {
+    return ["/images/default-car.jpeg"];
+  }
+
+  const apiBaseUrl = getApiBaseUrl();
+  const alternateBaseUrl = apiBaseUrl.includes("localhost")
+    ? apiBaseUrl.replace("localhost", "127.0.0.1")
+    : apiBaseUrl.includes("127.0.0.1")
+    ? apiBaseUrl.replace("127.0.0.1", "localhost")
+    : apiBaseUrl;
+  const baseUrlCandidates = [apiBaseUrl, alternateBaseUrl].filter(
+    (value, index, self) => self.indexOf(value) === index
+  );
+
+  const urls = baseUrlCandidates.flatMap((baseUrl) => {
+    const modelBaseUrl = `${baseUrl}/images/models/${modelId}`;
+
+    return [
+      `${modelBaseUrl}.png`,
+      `${modelBaseUrl}.jpg`,
+      `${modelBaseUrl}.jpeg`,
+      `${modelBaseUrl}.webp`,
+    ];
+  });
+
+  return [...urls, "/images/default-car.jpeg"];
+};
 
 export function Configure({}) {
   const router = useRouter();
@@ -28,7 +58,7 @@ export function Configure({}) {
   const [, setIsDrawerOpen] = useState<boolean>(false);
 
   const [initialModel, setInitialModel] = useState<InitialModel>({
-    brandColor: "#59a600",
+    brandColor: "#8f1424",
     modelName: "",
     logoUrl: "/images/logo.png",
   });
@@ -40,6 +70,9 @@ export function Configure({}) {
   const form = useForm<ChoicesConfiguration>({
     defaultValues: {},
   });
+  const modelImageFallback = buildModelImageCandidates(
+    configureData?.value?.model?.id
+  );
 
   const handleChoicesSelect = useCallback(
     (value: ChoicesConfiguration, name: string) => {
@@ -130,7 +163,7 @@ export function Configure({}) {
   useEffect(() => {
     if (configureData?.status === Status.SUCCESS && configureData?.value?.model) {
       setInitialModel({
-        brandColor: "#59a600",
+        brandColor: "#8f1424",
         modelName: configureData?.value?.model?.name ?? "",
         logoUrl: "/images/logo.png",
       });
@@ -158,6 +191,8 @@ export function Configure({}) {
     <>
       <ConfiguratorSlider
         image={configureData?.value?.image}
+        modelImage={modelImageFallback}
+        images={configureData?.value?.images}
         color={initialModel?.brandColor}
         isLoading={configureIsLoading}
         activeTab={activeTab}

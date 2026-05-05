@@ -38,6 +38,8 @@ services:
       NODE_ENV: production
     ports:
       - "3000:3000"
+    volumes:
+      - ./clo5-backend-master/images:/app/images:ro
 
   frontend:
     build:
