@@ -1,21 +1,28 @@
+- name: Validate Docker Swarm manager group
+  ansible.builtin.assert:
+    that:
+      - groups[docker_swarm_manager_group] | default([]) | length > 0
+    fail_msg: "Docker Swarm requires at least one manager in {{ docker_swarm_manager_group }}."
+  run_once: true
+
 - name: Initialize Docker Swarm on the primary manager
   community.docker.docker_swarm:
     state: present
-    advertise_addr: "{{ hostvars[groups['swarm_managers'][0]].ansible_host }}"
-  when: inventory_hostname == groups['swarm_managers'][0]
+    advertise_addr: "{{ ansible_host | default(ansible_default_ipv4.address) }}"
+  when: inventory_hostname == groups[docker_swarm_manager_group][0]
 
 - name: Get current worker join token from the primary manager
   community.docker.docker_swarm_info:
-  delegate_to: "{{ groups['swarm_managers'][0] }}"
+  delegate_to: "{{ groups[docker_swarm_manager_group][0] }}"
   run_once: true
   register: docker_swarm_primary_manager_swarm_info
-  when: groups['swarm_workers'] | length > 0
+  when: groups[docker_swarm_worker_group] | default([]) | length > 0
 
 - name: Join worker nodes to the swarm
   community.docker.docker_swarm:
     state: join
-    advertise_addr: "{{ ansible_host }}"
+    advertise_addr: "{{ ansible_host | default(ansible_default_ipv4.address) }}"
     join_token: "{{ docker_swarm_primary_manager_swarm_info.swarm_facts.JoinTokens.Worker }}"
     remote_addrs:
-      - "{{ hostvars[groups['swarm_managers'][0]].ansible_host }}:2377"
-  when: inventory_hostname in groups['swarm_workers']
+      - "{{ hostvars[groups[docker_swarm_manager_group][0]].ansible_host | default(hostvars[groups[docker_swarm_manager_group][0]].ansible_default_ipv4.address) }}:2377"
+  when: inventory_hostname in (groups[docker_swarm_worker_group] | default([]))

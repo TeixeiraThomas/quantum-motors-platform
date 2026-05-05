@@ -1,9 +1,46 @@
+- name: Get current Swarm node hostnames
+  ansible.builtin.command:
+    argv:
+      - docker
+      - node
+      - ls
+      - --format
+      - "{{ '{{.Hostname}}' }}"
+  register: docker_swarm_node_hostnames
+  changed_when: false
+  when: inventory_hostname == groups[docker_swarm_manager_group][0]
+
+- name: Build target label list for existing nodes
+  ansible.builtin.set_fact:
+    docker_swarm_existing_label_targets: >-
+      {{
+        (docker_swarm_existing_label_targets | default([]))
+        + [item]
+      }}
+  loop: "{{ swarm_node_labels | default({}) | dict2items }}"
+  when:
+    - inventory_hostname == groups[docker_swarm_manager_group][0]
+    - (hostvars[item.key].ansible_hostname | default(item.key))
+      in (docker_swarm_node_hostnames.stdout_lines | default([]))
+
+- name: Report skipped node labels when node is absent from Swarm
+  ansible.builtin.debug:
+    msg: >-
+      Skipping labels for {{ item.key }} because node
+      {{ hostvars[item.key].ansible_hostname | default(item.key) }}
+      is not currently part of the Swarm.
+  loop: "{{ swarm_node_labels | default({}) | dict2items }}"
+  when:
+    - inventory_hostname == groups[docker_swarm_manager_group][0]
+    - (hostvars[item.key].ansible_hostname | default(item.key))
+      not in (docker_swarm_node_hostnames.stdout_lines | default([]))
+
 - name: Apply configured node labels
   community.docker.docker_node:
     hostname: "{{ hostvars[item.key].ansible_hostname | default(item.key) }}"
     labels: "{{ item.value }}"
-  loop: "{{ swarm_node_labels | default({}) | dict2items }}"
-  when: inventory_hostname == groups['swarm_managers'][0]
+  loop: "{{ docker_swarm_existing_label_targets | default([]) }}"
+  when: inventory_hostname == groups[docker_swarm_manager_group][0]
 
 - name: Inspect applied node labels
   ansible.builtin.command:
@@ -16,26 +53,23 @@
       - "{{ hostvars[item.key].ansible_hostname | default(item.key) }}"
   register: node_info_check
   changed_when: false
-  loop: "{{ swarm_node_labels | default({}) | dict2items }}"
-  when: inventory_hostname == groups['swarm_managers'][0]
+  loop: "{{ docker_swarm_existing_label_targets | default([]) }}"
+  when: inventory_hostname == groups[docker_swarm_manager_group][0]
 
 - name: Validate node labels were applied
   ansible.builtin.assert:
     that:
       - >-
-        (
-          item.stdout
-          | from_json
-          | default({})
-          | dict2items
-          | map(attribute='key')
-          | list
-        )
-          | difference(item.item.value | dict2items | map(attribute='key') | list)
-          | length == 0
+        {{
+          (
+            (item.stdout | default('{}') | from_json | default({}, true))
+            | combine(item.item.value)
+          )
+          == (item.stdout | default('{}') | from_json | default({}, true))
+        }}
     fail_msg: >-
       Missing expected labels on {{ item.item.key }}.
       Expected: {{ item.item.value | to_json }}
       Actual: {{ item.stdout }}
   loop: "{{ node_info_check.results | default([]) }}"
-  when: inventory_hostname == groups['swarm_managers'][0]
+  when: inventory_hostname == groups[docker_swarm_manager_group][0]

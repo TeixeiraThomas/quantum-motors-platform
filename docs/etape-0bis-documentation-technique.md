@@ -120,6 +120,7 @@ Les artefacts suivants sont consideres comme les sources de verite du projet:
 
 - Les services Swarm critiques declarent des `reservations` et `limits` CPU/RAM pour reduire les evictions et mieux partager les `2 vCPU / 4 Go` de chaque VM.
 - `SonarQube` est volontairement borne sur le noeud `vm3` pour laisser de la capacite a `Loki`, `Grafana` et aux runners.
+- Le rôle `SonarQube` applique les prerequis kernel (`vm.max_map_count`, `fs.file-max`) sur le noeud cible avant de creer le service Swarm.
 
 ## 4. Architecture actuelle
 
@@ -318,10 +319,25 @@ Les jobs de build peuvent utiliser les credentials CI GitLab natifs. Les jobs de
 Machine d'administration:
 
 - `Ansible` installé localement
+<<<<<<< HEAD
+=======
+- collections Ansible installees via `ansible/requirements.yml`
+>>>>>>> develop
 - accès SSH aux `4` VMs
 - accès au fichier Vault ou aux secrets équivalentes
 - client Docker disponible si vous souhaitez valider localement les manifests avec `docker compose config`
 
+<<<<<<< HEAD
+=======
+Mode WSL recommande:
+
+- procedure dediee: [`PROC-07-wsl-workflow.md`](./PROC-07-wsl-workflow.md)
+- wrapper principal: `ansible/scripts/wsl-ansible.sh`
+- lecteur Vault: `ansible/scripts/wsl-vault-pass.sh`
+- ordre de controle: `requirements`, `vault-check`, `syntax-check`, `ping`
+- note transparence IA: la procedure WSL a ete structuree avec l'aide d'un assistant IA et doit rester relue/validee par l'equipe avant soutenance.
+
+>>>>>>> develop
 Pré-requis réseau:
 
 - résolution locale des domaines `*.quantum.local`, par exemple via `/etc/hosts`, vers l'IP exposée par `Traefik`
@@ -337,12 +353,22 @@ Pré-requis dépôt:
 ### Ordre minimal de reproduction
 
 1. Configurer l'inventaire et les variables Ansible.
+<<<<<<< HEAD
 2. Exécuter `ansible-playbook playbooks/infrastructure.yml`.
 3. Exécuter `ansible-playbook playbooks/gitlab.yml`.
 4. Récupérer le token d'enregistrement GitLab Runner.
 5. Exécuter `ansible-playbook playbooks/runners.yml`.
 6. Déclarer les variables CI/CD du projet GitLab.
 7. Pousser un commit sur la branche attendue pour lancer la chaîne CI/CD.
+=======
+2. Installer les collections avec `ansible-galaxy collection install -r ansible/requirements.yml` ou `bash ansible/scripts/wsl-ansible.sh requirements` depuis WSL.
+3. Exécuter `ansible-playbook playbooks/infrastructure.yml`.
+4. Exécuter `ansible-playbook playbooks/gitlab.yml`.
+5. Récupérer le token d'enregistrement GitLab Runner.
+6. Exécuter `ansible-playbook playbooks/runners.yml`.
+7. Déclarer les variables CI/CD du projet GitLab.
+8. Pousser un commit sur la branche attendue pour lancer la chaîne CI/CD.
+>>>>>>> develop
 
 ### Provisionner le cluster
 
@@ -403,6 +429,16 @@ Validation réalisée le `2026-04-04`:
 - `ansible-lint`: OK
 - `docker compose config` sur les manifests de deploiement: OK
 
+Validation complémentaire réalisée le `2026-04-21`:
+
+- build frontend: OK
+- lint frontend: OK
+- build backend: OK
+- lint backend: OK
+- `docker compose config` sur tous les manifests `deploy/*.yml`: OK
+- `docker stack config` sur tous les manifests `deploy/*.yml`: OK
+- liens Markdown `README.md` et `docs/*.md`: OK
+
 ### Validation live
 
 Validation live réalisée le `2026-04-04`:
@@ -414,11 +450,28 @@ Validation live réalisée le `2026-04-04`:
   - `vm2-runner`
   - `vm3-runner`
 
+<<<<<<< HEAD
 Point encore à faire pour la validation finale étape 2:
 
 - exécuter un vrai pipeline GitLab sur un commit poussé
 - vérifier les déploiements applicatifs live en préprod et en production green
 - vérifier en environnement réel la remontée des logs dans `Loki` et leur consultation dans `Grafana` après déploiement du rôle `logging_stack`
+=======
+Validation HTTP live réalisée le `2026-04-21`:
+
+- GitLab VM4 accessible sur `http://172.16.248.236/users/sign_in`
+- registry GitLab accessible sur `http://172.16.248.236:5050/v2/` avec réponse `401 Unauthorized` attendue sans credentials
+- SonarQube accessible sur `http://172.16.248.97:9000`
+- Grafana logs accessible via Traefik avec `Host: logs.quantum.local`
+- smoke test préproduction OK sur `preprod.quantum.local` et `api-preprod.quantum.local`
+- smoke test production live OK sur `front.quantum.local` et `api.quantum.local`
+
+Point encore à faire pour la validation finale étape 2:
+
+- exécuter un vrai pipeline GitLab sur un commit poussé
+- vérifier le statut des runners dans l'interface GitLab
+- vérifier en environnement réel le contenu des logs dans `Loki` et leur consultation dans `Grafana` après exécution d'une pipeline applicative
+>>>>>>> develop
 
 ## 10. Validation et points de controle
 
@@ -467,12 +520,21 @@ Les fichiers `docs/PROC-*.md` contiennent les procédures **pas-à-pas** pour re
 
 | # | Fichier | Titre | Durée | Prérequis | Objectif |
 |---|---------|-------|-------|-----------|----------|
+<<<<<<< HEAD
 | 0 | [PROC-00-check-prerequisites.md](../PROC-00-check-prerequisites.md) | Vérifier les prérequis système | 15 min | Poste local | Valider VMs, réseau, Ansible |
 | 1 | [PROC-01-vault-setup.md](../PROC-01-vault-setup.md) | Initialisation Ansible Vault | 10 min | Ansible installé | Configurer les secrets |
 | 2 | [PROC-02-gitlab-runner-token.md](../PROC-02-gitlab-runner-token.md) | Obtenir token GitLab Runner | 15 min | VM4 GitLab active | Enregistrer runners Swarm |
 | 3 | [PROC-03-gitlab-ci-variables.md](../PROC-03-gitlab-ci-variables.md) | Variables CI/CD GitLab | 20 min | Dépôt GitLab créé | Configurer la pipeline |
 | 4 | [PROC-04-hosts-setup.md](../PROC-04-hosts-setup.md) | DNS local /etc/hosts | 10 min | Accès réseau | Résoudre domaines *.quantum.local |
 | 5 | [PROC-05-cicd-validation.md](../PROC-05-cicd-validation.md) | Validation CI/CD live | 30 min | Tous playbooks OK | Tester build & deploy |
+=======
+| 0 | [PROC-00-check-prerequisites.md](./PROC-00-check-prerequisites.md) | Vérifier les prérequis système | 15 min | Poste local | Valider VMs, réseau, Ansible |
+| 1 | [PROC-01-vault-setup.md](./PROC-01-vault-setup.md) | Initialisation Ansible Vault | 10 min | Ansible installé | Configurer les secrets |
+| 2 | [PROC-02-gitlab-runner-token.md](./PROC-02-gitlab-runner-token.md) | Obtenir token GitLab Runner | 15 min | VM4 GitLab active | Enregistrer runners Swarm |
+| 3 | [PROC-03-gitlab-ci-variables.md](./PROC-03-gitlab-ci-variables.md) | Variables CI/CD GitLab | 20 min | Dépôt GitLab créé | Configurer la pipeline |
+| 4 | [PROC-04-hosts-setup.md](./PROC-04-hosts-setup.md) | DNS local /etc/hosts | 10 min | Accès réseau | Résoudre domaines *.quantum.local |
+| 5 | [PROC-05-cicd-validation.md](./PROC-05-cicd-validation.md) | Validation CI/CD live | 30 min | Tous playbooks OK | Tester build & deploy |
+>>>>>>> develop
 
 **Flux recommandé :**
 

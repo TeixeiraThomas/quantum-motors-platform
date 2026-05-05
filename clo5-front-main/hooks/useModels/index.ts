@@ -19,10 +19,17 @@ const fetchModels = async () => {
     };
   }
   const response = await data.json();
+  const values = Array.isArray(response)
+    ? response
+    : Array.isArray(response?.values)
+    ? response.values
+    : Array.isArray(response?.value)
+    ? response.value
+    : [];
 
   const datas: Models = {
-    status: Status.SUCCESS,
-    values: response,
+    status: values.length > 0 ? Status.SUCCESS : Status.MODELS_NOT_FOUND,
+    values: values,
   };
 
   return datas;

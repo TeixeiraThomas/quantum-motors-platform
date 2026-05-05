@@ -1,55 +1,66 @@
 @use "../../../assets/styles/common/breakpoints" as *;
 
 .configurator-slider {
-  --slider-width: 55rem;
-  --arrow-width: 35px;
+  --slider-width: min(76rem, 100%);
+  --arrow-width: 3.8rem;
+  --tab-text-color: rgb(255 255 255 / 88%);
+  --tab-border-color: rgb(255 255 255 / 32%);
+  --tab-bg-color: rgb(255 255 255 / 6%);
+  --tab-hover-bg-color: rgb(255 255 255 / 14%);
+  --tab-active-bg-color: #fff;
+  --tab-active-text-color: #10141a;
+  --tab-active-border-color: #fff;
 
   height: calc((var(--vh, 1vh) * 100) - var(--header--height) - var(--cta-bar--height));
-  display: grid;
-  place-items: center;
-  padding: var(--padding--body);
+  padding: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(68rem 44rem at 26% 22%, rgb(255 255 255 / 8%), transparent 72%),
+    linear-gradient(138deg, #090b0f 0%, #121620 52%, #0d1118 100%);
+  position: relative;
+  overflow: hidden;
 
-  @include media-breakpoint-up(lg) {
-    overflow-y: auto;
-  }
-
-  @include media-breakpoint-between(lg, xl) {
-    --slider-width: 43vw;
-
-    padding: var(--padding--body) 0 var(--padding--body) var(--padding--body);
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(90deg, rgb(255 255 255 / 3%) 1px, transparent 1px),
+      linear-gradient(0deg, rgb(255 255 255 / 3%) 1px, transparent 1px);
+    background-size: 4.5rem 4.5rem;
+    opacity: 0.6;
+    pointer-events: none;
   }
 
   @include media-breakpoint-down(lg) {
-    --slider-width: 90vw;
-    --arrow-width: 32px;
+    --slider-width: 100%;
 
     height: auto;
-    padding-top: 4rem;
-    padding-bottom: 1.5rem;
+    padding: 2rem var(--padding--body) 2.4rem;
+  }
+
+  [class="app-tab"] {
+    width: 100%;
+    max-width: 82rem;
+    position: relative;
+    z-index: 1;
   }
 
   &__slider {
     width: var(--slider-width);
-    height: 36.5rem;
-    margin-bottom: 2rem;
+    height: min(50rem, 58vh);
 
     @include media-breakpoint-down(lg) {
-      height: min(60vw, 36rem);
+      height: min(39rem, 58vw);
     }
 
     &__slide {
-      border-radius: 0.8rem;
+      border-radius: 1.4rem;
       overflow: hidden;
-
-      &:not([data-isolated-image="true"]) {
-        background-color: var(--color--light);
-
-        .configurator-slider__img {
-          img {
-            object-fit: cover;
-          }
-        }
-      }
+      background: linear-gradient(180deg, #f3f5f8 0%, #e8ecf2 100%);
+      border: 1px solid #d4dbe6;
     }
 
     [class="swiper-wrapper"] {
@@ -61,14 +72,6 @@
     }
   }
 
-  &__loader {
-    position: absolute;
-    width: 8rem;
-    top: 35%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-  }
-
   &__img {
     position: relative;
     height: 100%;
@@ -76,86 +79,78 @@
 
     img {
       object-fit: contain;
-      height: 100%;
       width: 100%;
+      height: 100%;
       position: absolute;
     }
   }
 
-  &__slider-thumbs {
-    width: calc(var(--slider-width) + (var(--arrow-width) * 2.5));
-    height: 12rem;
-    padding: 0 calc(var(--arrow-width) + 1rem);
+  &__loader {
+    position: absolute;
+    left: 50%;
+    top: 42%;
+    transform: translate(-50%, -50%);
+    width: 8rem;
+  }
 
-    @include media-breakpoint-down(lg) {
-      height: min(18vw, 16rem);
-      width: calc(var(--slider-width) + (var(--arrow-width)));
-      margin-left: calc(var(--arrow-width) * -0.5);
+  &__angles {
+    margin-top: 1.5rem;
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(11rem, 1fr);
+    gap: 0.8rem;
+    overflow-x: auto;
+    padding-bottom: 0.4rem;
+
+    &__button {
+      border: 1px solid rgb(255 255 255 / 28%);
+      background: rgb(255 255 255 / 6%);
+      color: rgb(255 255 255 / 88%);
+      border-radius: 1rem;
+      padding: 0.7rem;
+      display: grid;
+      gap: 0.45rem;
+      font-family: var(--font-family--primary);
+      font-size: 1.1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      transition: var(--border-color--average), var(--background-color--average), var(--transform--fast);
+      cursor: pointer;
+
+      &[data-active="true"] {
+        background: rgb(255 255 255 / 16%);
+        border-color: var(--accent-color);
+      }
+
+      &:hover {
+        transform: translateY(-1px);
+      }
     }
 
-    &::before,
-    &::after {
-      content: "";
-      position: absolute;
-      top: 0;
-      width: calc(var(--arrow-width) + 1rem);
-      height: 100%;
-      background-color: var(--gray--200);
-      z-index: 2;
-    }
-
-    &::before {
-      left: 0;
-    }
-
-    &::after {
-      right: 0;
-    }
-
-    &__img {
-      position: relative;
-      height: 100%;
-      width: 100%;
+    &__thumb {
+      height: 5.2rem;
+      border-radius: 0.8rem;
+      overflow: hidden;
+      background: #f0f3f8;
+      border: 1px solid rgb(255 255 255 / 24%);
+      display: block;
 
       img {
-        object-fit: contain;
-        height: 100%;
         width: 100%;
-        position: absolute;
-      }
-    }
-
-    &__slide {
-      opacity: 0.5;
-      transition: var(--opacity--average);
-      border-radius: 0.4rem;
-      overflow: hidden;
-
-      &[data-current="true"] {
-        opacity: 1;
-      }
-
-      &:not([data-isolated-image="true"]) {
-        background-color: var(--color--light);
-
-        img {
-          object-fit: cover;
-        }
-      }
-
-      &:not([data-current="true"]) {
-        cursor: pointer;
+        height: 100%;
+        object-fit: cover;
       }
     }
   }
 
   [class*="swiper-button-prev"],
   [class*="swiper-button-next"] {
-    background-color: var(--color--light);
-    border-radius: 100vmax;
     width: var(--arrow-width);
     height: var(--arrow-width);
-    box-shadow: 0 7px 15px -5px rgb(0 0 0 / 25%);
+    background: #fff;
+    border: 1px solid #d6dce6;
+    border-radius: 100vmax;
+    box-shadow: 0 1.2rem 2.8rem rgb(8 10 12 / 14%);
 
     &::after {
       content: url("/images/icon-arrow.svg");
@@ -164,20 +159,18 @@
   }
 
   [class*="swiper-button-prev"] {
-    padding-right: 0.3rem;
-    left: 0.5rem;
+    left: 1rem;
 
     &::after {
-      transform: scale(0.8);
+      transform: scale(0.82);
     }
   }
 
   [class*="swiper-button-next"] {
-    padding-left: 0.3rem;
-    right: 0.5rem;
+    right: 1rem;
 
     &::after {
-      transform: rotate(180deg) scale(0.8);
+      transform: rotate(180deg) scale(0.82);
     }
   }
 }

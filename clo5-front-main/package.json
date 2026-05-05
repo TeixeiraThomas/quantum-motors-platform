@@ -5,10 +5,10 @@
   "author": "Dany Rafina <rafina_d@etna-alternance.net>",
   "packageManager": "yarn@1.22.22",
   "scripts": {
-    "dev": "next dev -p 4200",
-    "build": "next build",
-    "start": "next start -p 4200",
-    "lint": "next lint"
+    "dev": "node node_modules/next/dist/bin/next dev -p 4200",
+    "build": "node node_modules/next/dist/bin/next build",
+    "start": "node node_modules/next/dist/bin/next start -p 4200",
+    "lint": "node node_modules/next/dist/bin/next lint"
   },
   "dependencies": {
     "@hookform/error-message": "^2.0.0",

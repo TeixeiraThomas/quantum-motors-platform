@@ -58,9 +58,9 @@ gitlab_registry_url: "http://172.16.248.236:5050"
 gitlab_runner_registration_token: "{{ vault_gitlab_runner_registration_token | default('') }}"
 
 gitlab_admin_users:
-  - username: intervenant_1
-    name: intervenant_1
-    email: intervenant_1@local.test
-  - username: intervenant_2
-    name: intervenant_2
-    email: intervenant_2@local.test
+  - username: teixei_t
+    name: teixei_t
+    email: teixei_t@quantum.local
+  - username: touahr_s
+    name: touahr_s
+    email: touahr_s@quantum.local

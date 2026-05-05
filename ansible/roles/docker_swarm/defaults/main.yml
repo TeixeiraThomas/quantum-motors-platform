@@ -1,1 +1,10 @@
+docker_packages:
+  - docker.io
+  - python3-docker
+
+docker_swarm_manager_group: swarm_managers
+docker_swarm_worker_group: swarm_workers
 docker_swarm_daemon_config: {}
+
+swarm_node_labels: {}
+overlay_networks: []

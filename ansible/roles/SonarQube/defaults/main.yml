@@ -1,0 +1,30 @@
+sonarqube_manager_group: swarm_managers
+sonarqube_target_group: sonarqube_nodes
+sonarqube_node_label: sonarqube
+
+sonarqube_service_name: sonarqube
+sonarqube_image: sonarqube:lts-community
+sonarqube_port: 9000
+
+sonarqube_sysctl:
+  vm.max_map_count: 262144
+  fs.file-max: 131072
+
+sonarqube_resources:
+  reservations:
+    cpus: 0.50
+    memory: 1024M
+  limits:
+    cpus: 1.50
+    memory: 1536M
+
+sonarqube_mounts:
+  - source: /srv/sonarqube/data
+    target: /opt/sonarqube/data
+    type: bind
+  - source: /srv/sonarqube/extensions
+    target: /opt/sonarqube/extensions
+    type: bind
+  - source: /srv/sonarqube/logs
+    target: /opt/sonarqube/logs
+    type: bind

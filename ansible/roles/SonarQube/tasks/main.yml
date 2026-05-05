@@ -1,3 +1,36 @@
+- name: Validate SonarQube placement groups
+  ansible.builtin.assert:
+    that:
+      - groups[sonarqube_manager_group] | default([]) | length > 0
+      - groups[sonarqube_target_group] | default([]) | length > 0
+    fail_msg: >-
+      SonarQube requires at least one manager in {{ sonarqube_manager_group }}
+      and one target host in {{ sonarqube_target_group }}.
+  run_once: true
+
+- name: Persist SonarQube kernel requirements on the target node
+  ansible.builtin.copy:
+    dest: /etc/sysctl.d/99-sonarqube.conf
+    content: |
+      {% for key, value in sonarqube_sysctl.items() %}
+      {{ key }}={{ value }}
+      {% endfor %}
+    owner: root
+    group: root
+    mode: "0644"
+  delegate_to: "{{ groups[sonarqube_target_group][0] }}"
+  run_once: true
+  register: sonarqube_sysctl_config
+
+- name: Apply SonarQube kernel requirements when they change
+  ansible.builtin.command:
+    argv:
+      - sysctl
+      - --system
+  delegate_to: "{{ groups[sonarqube_target_group][0] }}"
+  run_once: true
+  when: sonarqube_sysctl_config.changed
+
 - name: Ensure SonarQube persistent directories exist on the target node
   ansible.builtin.file:
     path: "{{ item.source }}"
@@ -6,7 +39,7 @@
     group: "1000"
     mode: "0755"
   loop: "{{ sonarqube_mounts }}"
-  delegate_to: "{{ groups['sonarqube_nodes'][0] }}"
+  delegate_to: "{{ groups[sonarqube_target_group][0] }}"
   run_once: true
 
 - name: Deploy SonarQube service
@@ -19,10 +52,10 @@
     mounts: "{{ sonarqube_mounts }}"
     placement:
       constraints:
-        - node.labels.sonarqube == true
+        - "node.labels.{{ sonarqube_node_label }} == true"
     reservations: "{{ sonarqube_resources.reservations }}"
     limits: "{{ sonarqube_resources.limits }}"
     mode: replicated
     replicas: 1
     state: present
-  when: inventory_hostname == groups['swarm_managers'][0]
+  when: inventory_hostname == groups[sonarqube_manager_group][0]

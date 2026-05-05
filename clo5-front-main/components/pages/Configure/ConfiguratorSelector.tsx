@@ -1,14 +1,16 @@
 import { ButtonWithoutLink } from "@/components/ui/Buttons";
 import { Icon } from "@/components/ui/Icon/Icon";
+import ModelSpecs from "@/components/ui/ModelSpecs/ModelSpecs";
 import { useHasHydrated } from "@/hooks/useHasHydrated";
 import * as AlertDialog from "@radix-ui/react-alert-dialog";
 import { motion, Variants } from "framer-motion";
 import { animEasingPrimary } from "lib/globalConstants";
 import { formatChoicePrice, numberWithSpaces } from "lib/helpers";
+import { computeModelSpecs } from "lib/modelSpecs";
 import { useTranslation } from "next-i18next";
 import Image from "next/image";
 import { useRouter } from "next/router";
-import { Dispatch, SetStateAction, useEffect, useState } from "react";
+import { Dispatch, SetStateAction, useCallback, useEffect, useState } from "react";
 import { UseFormReturn } from "react-hook-form";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
@@ -37,6 +39,20 @@ const ConfiguratorSelector = ({
   const router = useRouter();
   const hasHydrated = useHasHydrated();
   const { t } = useTranslation(["common", "catalog"]);
+  const finishes = Array.isArray(configuratorValues?.finishes)
+    ? configuratorValues.finishes
+    : [];
+  const batteries = Array.isArray(configuratorValues?.batteries)
+    ? configuratorValues.batteries
+    : [];
+  const colors = Array.isArray(configuratorValues?.colors)
+    ? configuratorValues.colors
+    : [];
+  const modelSpecs = computeModelSpecs({
+    model: configuratorValues?.model,
+    batteries,
+    finishes,
+  });
 
   const [scrollPosition, setScrollPosition] = useState<number>(0);
 
@@ -72,10 +88,10 @@ const ConfiguratorSelector = ({
     },
   };
 
-  function handleScroll() {
-    const position = scrollRef.current.scrollTop;
+  const handleScroll = useCallback(() => {
+    const position = scrollRef?.current?.scrollTop ?? 0;
     setScrollPosition(position);
-  }
+  }, [scrollRef]);
 
   useEffect(() => {
     window.addEventListener("scroll", handleScroll, { passive: true });
@@ -83,11 +99,11 @@ const ConfiguratorSelector = ({
     return () => {
       window.removeEventListener("scroll", handleScroll);
     };
-  });
+  }, [handleScroll]);
 
   useEffect(() => {
     if (configuratorValues) {
-      scrollRef.current.scrollTo(0, scrollPosition);
+      scrollRef?.current?.scrollTo(0, scrollPosition);
     }
   }, [configuratorValues, scrollRef, scrollPosition]);
 
@@ -95,7 +111,6 @@ const ConfiguratorSelector = ({
     <>
       {hasHydrated && (
         <motion.div
-          style={{ color: initialModel?.brandColor }}
           variants={staggerContainer}
           initial="hidden"
           animate="show"
@@ -120,10 +135,17 @@ const ConfiguratorSelector = ({
                 <span className={`${styles["configurator-selector__price"]}`}>
                   {isLoading ? (
                     <Skeleton className={`skeleton__line`} />
-                  ) : (
-                    <>{numberWithSpaces(configuratorValues?.price)}€ TTC</>
-                  )}
+                  ) : configuratorValues ? (
+                    <>
+                      {numberWithSpaces(configuratorValues?.price)} {"\u20AC"} TTC
+                    </>
+                  ) : null}
                 </span>
+                {!isLoading && configuratorValues?.model ? (
+                  <div className={`${styles["configurator-selector__specs"]}`}>
+                    <ModelSpecs specs={modelSpecs} surface="light" />
+                  </div>
+                ) : null}
               </div>
               <div
                 className={`${styles["configurator-selector__header__buttons"]}`}
@@ -184,47 +206,48 @@ const ConfiguratorSelector = ({
               </h2>
             </div>
             {isLoading && <Skeleton className={`skeleton__img`} count={2} />}
-            {configuratorValues?.finishes?.map((item: any, index: number) => {
-              return (
-                <label
-                  key={index}
-                  htmlFor={`finish-${item.id}`}
-                  data-is-selected={item.state.selected}
-                >
-                  <Icon src="icon-check" width={24} height={24} />
-                  <div
-                    className={`${styles["configurator-selector__section__content"]}`}
+            {!isLoading &&
+              finishes.map((item: any, index: number) => {
+                return (
+                  <label
+                    key={item?.id ?? index}
+                    htmlFor={`finish-${item.id}`}
+                    data-is-selected={item.state?.selected}
                   >
-                    <h4
-                      className={`${styles["configurator-selector__label-title"]}`}
+                    <Icon src="icon-check" width={24} height={24} />
+                    <div
+                      className={`${styles["configurator-selector__section__content"]}`}
                     >
-                      {item.name}
-                    </h4>
-                    <p
-                      dangerouslySetInnerHTML={{
-                        __html: item.description,
-                      }}
+                      <h4
+                        className={`${styles["configurator-selector__label-title"]}`}
+                      >
+                        {item.name}
+                      </h4>
+                      <p
+                        dangerouslySetInnerHTML={{
+                          __html: item.description,
+                        }}
+                      />
+                    </div>
+                    <div
+                      className={`${styles["configurator-selector__section__price"]}`}
+                    >
+                      {formatChoicePrice(item)}
+                    </div>
+                    <input
+                      type="radio"
+                      value={item.id}
+                      id={`finish-${item.id}`}
+                      checked={Boolean(item.state?.selected)}
+                      {...form.register("finish", {
+                        onChange: () => {
+                          handleScroll();
+                        },
+                      })}
                     />
-                  </div>
-                  <div
-                    className={`${styles["configurator-selector__section__price"]}`}
-                  >
-                    {formatChoicePrice(item)}
-                  </div>
-                  <input
-                    type="radio"
-                    value={item.id}
-                    id={`finish-${item.id}`}
-                    checked={item.state.selected}
-                    {...form.register("finish", {
-                      onChange: (e) => {
-                        handleScroll();
-                      },
-                    })}
-                  />
-                </label>
-              );
-            })}
+                  </label>
+                );
+              })}
           </motion.fieldset>
 
           {/* Batteries */}
@@ -239,47 +262,48 @@ const ConfiguratorSelector = ({
             </h2>
             {isLoading && <Skeleton className={`skeleton__img`} count={2} />}
 
-            {configuratorValues?.batteries.map((item: any, index: number) => {
-              return (
-                <label
-                  key={index}
-                  htmlFor={`battery-${item.id}`}
-                  data-is-selected={item.state.selected}
-                >
-                  <Icon src="icon-check" width={24} height={24} />
-                  <div
-                    className={`${styles["configurator-selector__section__content"]}`}
+            {!isLoading &&
+              batteries.map((item: any, index: number) => {
+                return (
+                  <label
+                    key={item?.id ?? index}
+                    htmlFor={`battery-${item.id}`}
+                    data-is-selected={item.state?.selected}
                   >
-                    <h4
-                      className={`${styles["configurator-selector__label-title"]}`}
+                    <Icon src="icon-check" width={24} height={24} />
+                    <div
+                      className={`${styles["configurator-selector__section__content"]}`}
                     >
-                      {item.name}
-                    </h4>
-                    <p
-                      dangerouslySetInnerHTML={{
-                        __html: item.description,
-                      }}
+                      <h4
+                        className={`${styles["configurator-selector__label-title"]}`}
+                      >
+                        {item.name}
+                      </h4>
+                      <p
+                        dangerouslySetInnerHTML={{
+                          __html: item.description,
+                        }}
+                      />
+                    </div>
+                    <div
+                      className={`${styles["configurator-selector__section__price"]}`}
+                    >
+                      {formatChoicePrice(item)}
+                    </div>
+                    <input
+                      type="radio"
+                      value={item.id}
+                      id={`battery-${item.id}`}
+                      checked={Boolean(item.state?.selected)}
+                      {...form.register("battery", {
+                        onChange: () => {
+                          handleScroll();
+                        },
+                      })}
                     />
-                  </div>
-                  <div
-                    className={`${styles["configurator-selector__section__price"]}`}
-                  >
-                    {formatChoicePrice(item)}
-                  </div>
-                  <input
-                    type="radio"
-                    value={item.id}
-                    id={`battery-${item.id}`}
-                    checked={item.state.selected}
-                    {...form.register("battery", {
-                      onChange: (e) => {
-                        handleScroll();
-                      },
-                    })}
-                  />
-                </label>
-              );
-            })}
+                  </label>
+                );
+              })}
           </motion.fieldset>
 
           {/* Couleurs */}
@@ -298,72 +322,72 @@ const ConfiguratorSelector = ({
               </div>
             )}
             <div className={`${styles["configurator-selector__color-list"]}`}>
-              {configuratorValues?.colors?.map((item: any, index: number) => {
-                return (
-                  <label
-                    key={index}
-                    htmlFor={`color-${item.id}`}
-                    data-is-selected={item.state.selected}
-                  >
-                    <span
-                      className={`${
-                        styles["configurator-selector__color-list__color"]
-                      } ${
-                        item.hexa === "999999"
-                          ? styles[
-                              "configurator-selector__color-list__color--mat"
-                            ]
-                          : ""
-                      }`}
-                      style={
-                        item.hexa === "999999"
-                          ? {
-                              backgroundImage: `url(/images/color-wheel.jpg)`,
-                            }
-                          : { backgroundColor: `#${item.hexa}` }
-                      }
-                    />
-                    <input
-                      type="radio"
-                      value={item.id}
-                      id={`color-${item.id}`}
-                      checked={item.state.selected}
-                      {...form.register("color", {
-                        onChange: (e) => {
-                          handleScroll();
-                        },
-                      })}
-                    />
-                  </label>
-                );
-              })}
+              {!isLoading &&
+                colors.map((item: any, index: number) => {
+                  return (
+                    <label
+                      key={item?.id ?? index}
+                      htmlFor={`color-${item.id}`}
+                      data-is-selected={item.state?.selected}
+                    >
+                      <span
+                        className={`${
+                          styles["configurator-selector__color-list__color"]
+                        } ${
+                          item.hexa === "999999"
+                            ? styles[
+                                "configurator-selector__color-list__color--mat"
+                              ]
+                            : ""
+                        }`}
+                        style={
+                          item.hexa === "999999"
+                            ? {
+                                backgroundImage: `url(/images/color-wheel.jpg)`,
+                              }
+                            : { backgroundColor: `#${item.hexa}` }
+                        }
+                      />
+                      <input
+                        type="radio"
+                        value={item.id}
+                        id={`color-${item.id}`}
+                        checked={Boolean(item.state?.selected)}
+                        {...form.register("color", {
+                          onChange: () => {
+                            handleScroll();
+                          },
+                        })}
+                      />
+                    </label>
+                  );
+                })}
 
-              {configuratorValues?.colors.map((item: any, index: number) => {
-                return (
-                  <div
-                    key={index}
-                    className={`${styles["configurator-selector__color-list__data"]}`}
-                  >
-                    {item.state.selected && (
-                      <>
-                        <h4
-                          className={`${styles["configurator-selector__color-list__title"]}`}
-                        >
-                          {item.name}
-                        </h4>
+              {!isLoading &&
+                colors.map((item: any, index: number) => {
+                  return (
+                    <div
+                      key={item?.id ?? index}
+                      className={`${styles["configurator-selector__color-list__data"]}`}
+                    >
+                      {item.state?.selected && (
+                        <>
+                          <h4
+                            className={`${styles["configurator-selector__color-list__title"]}`}
+                          >
+                            {item.name}
+                          </h4>
 
-                        <div
-                          className={`${styles["configurator-selector__color-list__price"]}`}
-                        >
-                          {item.price === 0
-                            ? `Inclus`
-                            : formatChoicePrice(item)}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                );
-              })}
+                          <div
+                            className={`${styles["configurator-selector__color-list__price"]}`}
+                          >
+                            {item.price === 0 ? `Inclus` : formatChoicePrice(item)}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
             </div>
           </motion.fieldset>
           {isLoading && (

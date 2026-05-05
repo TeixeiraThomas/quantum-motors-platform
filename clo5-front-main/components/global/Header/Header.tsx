@@ -49,7 +49,7 @@ const Header = ({ colorMode, className }: Props) => {
         </div>
 
         <div className={`${styles["app-header__right-content"]}`}>
-          {router.locales!.length > 1 ? (
+          {Array.isArray(router.locales) && router.locales.length > 1 ? (
             <ul
               className={`${styles["app-header__lang-switcher"]} list-unstyled`}
             >

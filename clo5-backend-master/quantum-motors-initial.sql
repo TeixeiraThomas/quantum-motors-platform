@@ -1,4 +1,4 @@
--- MySQL dump 10.13  Distrib 8.0.34, for macos13 (x86_64)
+﻿-- MySQL dump 10.13  Distrib 8.0.34, for macos13 (x86_64)
 --
 -- Host: localhost    Database: quantum-motors
 -- ------------------------------------------------------
@@ -92,7 +92,7 @@ CREATE TABLE `_FinishToModel` (
 
 LOCK TABLES `_FinishToModel` WRITE;
 /*!40000 ALTER TABLE `_FinishToModel` DISABLE KEYS */;
-INSERT INTO `_FinishToModel` VALUES (1,1),(2,1),(3,1),(2,2),(4,2),(1,3),(2,3),(3,4),(4,4),(3,5),(4,5);
+INSERT INTO _FinishToModel VALUES (2,1),(3,1),(4,1),(1,2),(2,2),(4,2),(1,3),(2,3),(3,4),(4,4),(2,5),(4,5);
 /*!40000 ALTER TABLE `_FinishToModel` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -150,7 +150,7 @@ CREATE TABLE `Battery` (
 
 LOCK TABLES `Battery` WRITE;
 /*!40000 ALTER TABLE `Battery` DISABLE KEYS */;
-INSERT INTO `Battery` VALUES (1,'Batterie Standard','Une option équilibrée adaptée à un usage quotidien. La batterie standard dispose d\'une capacité de 50 kWh, d\'une puissance de 150 kW, et offre une autonomie d\'environ 300 km, idéale pour les déplacements urbains.',150,50,0),(2,'Batterie Étendue','Parfaite pour des trajets plus longs, la batterie étendue propose une capacité de 70 kWh, une puissance de 200 kW, et une autonomie d\'environ 450 km. Elle convient bien aux déplacements périurbains et aux voyages occasionnels.',200,70,1500),(3,'Batterie Extrême','La batterie extrême est conçue pour des performances maximales. Avec une capacité de 90 kWh, une puissance de 250 kW, elle offre une autonomie d\'environ 600 km, idéale pour les amateurs de conduite sportive et les longs trajets.',250,90,2000);
+INSERT INTO Battery VALUES (1,'Batterie Standard','Batterie polyvalente pour un usage quotidien. Capacite de 58 kWh, puissance de 180 kW, equilibre entre performances et autonomie.',180,58,0),(2,'Batterie Grande Autonomie','Batterie orientee longs trajets. Capacite de 82 kWh, puissance de 240 kW, autonomie renforcee pour la route et les vacances.',240,82,4200),(3,'Batterie Performance','Batterie haute performance. Capacite de 102 kWh, puissance de 320 kW, acceleration et reprises maximales.',320,102,8900);
 /*!40000 ALTER TABLE `Battery` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -184,7 +184,7 @@ CREATE TABLE `Car` (
 
 LOCK TABLES `Car` WRITE;
 /*!40000 ALTER TABLE `Car` DISABLE KEYS */;
-INSERT INTO `Car` VALUES (1,'EES',1,1,1),(2,'EEA',1,1,2),(3,'EEB',1,1,3),(4,'ECS',1,2,1),(5,'ECA',1,2,2),(6,'ECB',1,2,3),(7,'VCS',2,2,1),(8,'VCA',2,2,2),(9,'VCB',2,2,3),(10,'VUS',2,4,1),(11,'VUA',2,4,2),(12,'VUB',2,4,3),(13,'SES',3,1,1),(14,'SEA',3,1,2),(15,'SEB',3,1,3),(16,'SCS',3,2,1),(17,'SCA',3,2,2),(18,'SCB',3,2,3),(19,'PSS',4,3,1),(20,'PSA',4,3,2),(21,'PSB',4,3,3),(22,'PUS',4,4,1),(23,'PUA',4,4,2),(24,'PUB',4,4,3),(25,'ZSS',5,3,1),(26,'ZSA',5,3,2),(27,'ZSB',5,3,3),(28,'ZUS',5,4,1),(29,'ZUA',5,4,2),(30,'ZUB',5,4,3),(31,'ESS',1,3,1),(32,'ESA',1,3,2),(33,'ESB',1,3,3);
+INSERT INTO Car VALUES (1,'ECS',1,2,1),(2,'ECA',1,2,2),(3,'ECB',1,2,3),(4,'ESS',1,3,1),(5,'ESA',1,3,2),(6,'ESB',1,3,3),(7,'EUS',1,4,1),(8,'EUA',1,4,2),(9,'EUB',1,4,3),(10,'VES',2,1,1),(11,'VEA',2,1,2),(12,'VEB',2,1,3),(13,'VCS',2,2,1),(14,'VCA',2,2,2),(15,'VCB',2,2,3),(16,'VUS',2,4,1),(17,'VUA',2,4,2),(18,'VUB',2,4,3),(19,'SES',3,1,1),(20,'SEA',3,1,2),(21,'SEB',3,1,3),(22,'SCS',3,2,1),(23,'SCA',3,2,2),(24,'SCB',3,2,3),(25,'PSS',4,3,1),(26,'PSA',4,3,2),(27,'PSB',4,3,3),(28,'PUS',4,4,1),(29,'PUA',4,4,2),(30,'PUB',4,4,3),(31,'ZCS',5,2,1),(32,'ZCA',5,2,2),(33,'ZCB',5,2,3),(34,'ZUS',5,4,1),(35,'ZUA',5,4,2),(36,'ZUB',5,4,3);
 /*!40000 ALTER TABLE `Car` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -213,7 +213,7 @@ CREATE TABLE `Color` (
 
 LOCK TABLES `Color` WRITE;
 /*!40000 ALTER TABLE `Color` DISABLE KEYS */;
-INSERT INTO `Color` VALUES (1,'WHI','Blanc','Blanc',0,'FFFFFF'),(2,'BLK','Noir','Noir',0,'000000'),(3,'REI','Rouge intense','Rouge intense',150.99,'FF2400'),(4,'BLC','Bleu ciel','Bleu ciel',120.99,'77B5FE'),(5,'GRC','Gris cosmos','Gris cosmos',150.99,'D3D3D3'),(6,'YEL','Jaune brillant','Jaune brillant',199.99,'FFFF00');
+INSERT INTO Color VALUES (1,'WHI','Blanc','Blanc',0,'FFFFFF'),(2,'BLK','Noir','Noir',0,'000000'),(3,'REI','Rouge intense','Rouge intense',490,'FF2400'),(4,'BLC','Bleu ciel','Bleu ciel',390,'77B5FE'),(5,'GRC','Gris cosmos','Gris cosmos',450,'D3D3D3'),(6,'YEL','Jaune brillant','Jaune brillant',650,'FFFF00');
 /*!40000 ALTER TABLE `Color` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -239,7 +239,7 @@ CREATE TABLE `Finish` (
 
 LOCK TABLES `Finish` WRITE;
 /*!40000 ALTER TABLE `Finish` DISABLE KEYS */;
-INSERT INTO `Finish` VALUES (1,'Eco','Une option abordable qui met l\'accent sur l\'efficacité énergétique. La finition Eco offre une conduite économique sans compromettre le budget, idéale pour ceux qui recherchent une solution éco-responsable',0),(2,'Confort','La finition Confort allie confort et fonctionnalités avancées à un prix raisonnable. Parfaite pour ceux qui veulent une expérience de conduite agréable sans dépasser leur budget, elle offre un équilibre idéal entre luxe et accessibilité',1100.99),(3,'Sport','Pour les amateurs de conduite dynamique, la finition Sport offre des performances accrues à un prix compétitif. Elle est conçue pour ceux qui veulent ressentir l\'excitation de la route sans sacrifier leur portefeuille',2895.99),(4,'Ultra','L\'apogée du luxe et de la technologie, la finition Ultra offre des fonctionnalités haut de gamme à un prix abordable. Une option pour ceux qui recherchent le summum de la qualité sans compromettre leur budget.',3500.99);
+INSERT INTO Finish VALUES (1,'Eco','Version efficiente orientee cout d usage et sobriete energetique. Ideale pour les trajets du quotidien.',0),(2,'Confort','Version familiale axee confort, silence a bord et equipements utiles au quotidien.',2200),(3,'Sport','Version dynamique avec reglages plus fermes et sensations de conduite renforcees.',5200),(4,'Ultra','Version premium avec equipements haut de gamme et finition interieure renforcee.',7800);
 /*!40000 ALTER TABLE `Finish` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -266,7 +266,7 @@ CREATE TABLE `Model` (
 
 LOCK TABLES `Model` WRITE;
 /*!40000 ALTER TABLE `Model` DISABLE KEYS */;
-INSERT INTO `Model` VALUES (1,'Electron','SUV électrique, fusion parfaite de style moderne et de mobilité durable. Conduite fluide, performances électriques remarquables. L\'avenir de la conduite respectueuse de l\'environnement.',60000,'SUV'),(2,'Volt','Berline électrique de luxe, alliant élégance et performances révolutionnaires. Conduite silencieuse, intérieur somptueux, l\'apogée du raffinement dans le monde de l\'électromobilité intuitive',75000,'SEDAN'),(3,'Spark','Design moderne et compact, batterie optimisée pour une conduite urbaine, connectivité avancée, options de personnalisation',40000,'HATCH'),(4,'Pulse','Accélération rapide, conception aérodynamique, système de récupération d\'énergie, écran tactile central avec des informations en temps réel sur la performance électrique.',50000,'HATCH'),(5,'Zenith','Silhouette élégante, autonomie élevée, système de navigation avancé, charge sans fil, intérieur sportif et sophistiqué',65000,'SEDAN');
+INSERT INTO Model VALUES (1,'Electron','SUV confortable, lourd et puissant, concu pour les familles qui veulent de la presence sur route et de la serenite au quotidien.',65990,'SUV'),(2,'Volt','Break familial confortable, optimise pour les longs trajets, grand coffre et excellente polyvalence.',54990,'SEDAN'),(3,'Spark','Vehicule compact du quotidien, agile en ville, sobre et simple a stationner.',32990,'HATCH'),(4,'Pulse','Coupe sport electrique, la plus puissante de la gamme, acceleration franche et comportement dynamique.',89990,'SEDAN'),(5,'Zenith','Berline familiale tres confortable, orientee bien-etre a bord et voyages longue distance.',61990,'SEDAN');
 /*!40000 ALTER TABLE `Model` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -280,3 +280,4 @@ UNLOCK TABLES;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
 -- Dump completed on 2024-02-04 23:53:34
+

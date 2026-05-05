@@ -142,8 +142,8 @@ Acceptation ✅ : `ansible --version` retourne 2.10+
 #### ✅ Collections Ansible installées
 
 ```bash
-# Installe la collection community.docker (requise)
-ansible-galaxy collection install community.docker
+# Installe les collections requises par les roles du depot
+ansible-galaxy collection install -r ansible/requirements.yml
 
 # Vérifie
 ansible-galaxy collection list | grep community.docker
@@ -264,6 +264,23 @@ ansible-vault view \
   ansible/inventories/production/group_vars/vault.yml | head -5
 
 # Acceptation ✅ : Aucune erreur "Bad vault password"
+```
+
+#### Variante WSL
+
+Depuis WSL, le depot fournit un wrapper qui evite les problemes de chemins Windows et de variable `VAULT_PASS` non transmise a WSL :
+
+```bash
+cd /mnt/c/ETNA/MASTER2/Quantum-Motors
+
+bash ansible/scripts/wsl-ansible.sh vault-check
+bash ansible/scripts/wsl-ansible.sh syntax-check
+```
+
+Le wrapper lit par defaut `/mnt/c/ETNA/MASTER2/VMS & SERVICES.txt`. Si le fichier est ailleurs :
+
+```bash
+QM_SECRETS_FILE=/mnt/c/chemin/vers/secrets.txt bash ansible/scripts/wsl-ansible.sh vault-check
 ```
 
 ---

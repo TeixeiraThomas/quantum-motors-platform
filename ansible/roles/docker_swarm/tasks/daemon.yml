@@ -9,6 +9,10 @@
   notify:
     - Restart Docker
 
+- name: Apply Docker daemon changes before swarm operations
+  ansible.builtin.meta: flush_handlers
+  when: docker_swarm_daemon_config | length > 0
+
 - name: Ensure Docker service is enabled and started after daemon configuration
   ansible.builtin.service:
     name: docker

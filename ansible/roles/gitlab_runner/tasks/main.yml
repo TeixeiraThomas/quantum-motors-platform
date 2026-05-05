@@ -1,10 +1,3 @@
-- name: Ensure GitLab Runner registration variables are defined
-  ansible.builtin.assert:
-    that:
-      - gitlab_runner_registration_token | length > 0
-    fail_msg: "gitlab_runner_registration_token must be defined before deploying runners"
-  no_log: true
-
 - name: Create runner config directory
   ansible.builtin.file:
     path: /srv/gitlab-runner
@@ -21,6 +14,14 @@
   ansible.builtin.stat:
     path: /srv/gitlab-runner/config.toml
   register: gitlab_runner_config
+
+- name: Ensure GitLab Runner registration token is defined when registration is required
+  ansible.builtin.assert:
+    that:
+      - gitlab_runner_registration_token | default('') | length > 0
+    fail_msg: "gitlab_runner_registration_token must be defined before registering a new runner"
+  when: not gitlab_runner_config.stat.exists
+  no_log: true
 
 - name: Build runner tag list
   ansible.builtin.set_fact:

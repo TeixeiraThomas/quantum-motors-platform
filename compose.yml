@@ -34,10 +34,12 @@ services:
       HOST: 0.0.0.0
       ADMIN_PASSWORD: P@ssw0rd!
       CAR_SERVICE_IMAGE_URL: http://localhost:3000
-      CORS_ORIGIN: http://localhost:4200
+      CORS_ORIGIN: "*"
       NODE_ENV: production
     ports:
       - "3000:3000"
+    volumes:
+      - ./clo5-backend-master/images:/app/images:ro
 
   frontend:
     build:

@@ -2,7 +2,7 @@
 
 .layout-configurator {
   margin-top: var(--header--height);
-  background-color: var(--gray--200);
+  background-color: #edf0f5;
 
   @include media-breakpoint-up(lg) {
     height: calc((var(--vh, 1vh) * 100) - var(--header--height) - var(--cta-bar--height));
@@ -10,7 +10,7 @@
 
   &__configurator {
     display: grid;
-    grid-template-columns: 8fr 7fr;
+    grid-template-columns: 1.05fr 1fr;
     height: 100%;
     overflow: hidden;
 
@@ -25,22 +25,24 @@
     overflow: auto;
     display: flex;
     flex-direction: column;
-    padding: 5.8rem 10vw 5.8rem var(--padding--body);
+    padding: 5rem clamp(2rem, 6vw, 9.5rem) 5rem var(--padding--body);
+    position: relative;
 
     @include media-breakpoint-between(lg, xl) {
-      padding: 5.8rem var(--padding--body) 5.8rem;
+      padding-right: var(--padding--body);
     }
 
     @include media-breakpoint-down(lg) {
       padding:
+        2rem
         var(--padding--body)
-        var(--padding--body)
-        calc(var(--cta-bar--height) + var(--padding--body) + 1rem)
+        calc(var(--cta-bar--height) + 2rem)
         var(--padding--body);
     }
 
     &__content {
       margin: auto 0;
+      width: min(64rem, 100%);
     }
   }
 }

@@ -1,4 +1,6 @@
 import Joi from "joi";
+import fs from "node:fs";
+import path from "node:path";
 import {
   BatteryConfigure,
   CarConfigured,
@@ -19,6 +21,24 @@ import { BaseService } from "./BaseService";
  *
  */
 export class CarService extends BaseService {
+  private static resolveImageUrl(
+    relativeDir: string,
+    baseName: string,
+    fallbackUrl: string
+  ) {
+    const supportedExtensions = [".png", ".jpg", ".jpeg", ".webp"];
+    const absoluteDir = path.resolve(__dirname, "../../images", relativeDir);
+
+    for (const extension of supportedExtensions) {
+      const absoluteFilePath = path.join(absoluteDir, `${baseName}${extension}`);
+      if (fs.existsSync(absoluteFilePath)) {
+        return `${process.env.CAR_SERVICE_IMAGE_URL}/images/${relativeDir}/${baseName}${extension}`;
+      }
+    }
+
+    return fallbackUrl;
+  }
+
   /**
    * @method validate
    * @description Validate Car
@@ -336,6 +356,20 @@ export class CarService extends BaseService {
 
     // create the UIC (Unique Identification Code with the car combination and color code)
     const uic = carSelected.code + "-" + colorSelected.code;
+    const imageFallback = CarService.resolveImageUrl(
+      "models",
+      String(findCar.id),
+      CarService.resolveImageUrl(
+        "models",
+        "1",
+        `${process.env.CAR_SERVICE_IMAGE_URL}/images/models/1.png`
+      )
+    );
+    const configuredImageUrl = CarService.resolveImageUrl(
+      `configure/${carSelected.code}`,
+      colorSelected.code,
+      imageFallback
+    );
     const carConfigured: CarConfigured = {
       price: this.priceFormatter(price),
       uic: uic,
@@ -347,7 +381,7 @@ export class CarService extends BaseService {
         price: this.priceFormatter(price),
       },
       finishes: finishes,
-      image: `${process.env.CAR_SERVICE_IMAGE_URL}/images/configure/${carSelected.code}/${colorSelected.code}.png`,
+      image: configuredImageUrl,
       colors: colors,
       batteries: batteries,
     };

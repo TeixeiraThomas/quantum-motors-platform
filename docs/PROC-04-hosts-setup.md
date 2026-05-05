@@ -181,10 +181,10 @@ ping traefik.quantum.local
 
 ```bash
 # Windows / Mac / Linux
-curl http://traefik.quantum.local
+curl -I http://traefik.quantum.local/dashboard/
 
 # OU avec curl verbose
-curl -v http://traefik.quantum.local
+curl -v http://traefik.quantum.local/dashboard/
 
 # Output attendu :
 # HTTP/1.1 200 OK
@@ -197,7 +197,7 @@ curl -v http://traefik.quantum.local
 Ouvre un navigateur et va à :
 
 ```
-http://traefik.quantum.local
+http://traefik.quantum.local/dashboard/
 ```
 
 Acceptation ✅ : Accès aux pages sans erreur DNS.

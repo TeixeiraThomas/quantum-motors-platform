@@ -10,20 +10,20 @@
   --font-size--md: 1.6rem;
   --font-size--sm: 1.4rem;
   --font-size--xs: 1.2rem;
-  --font-size--h1: 5rem;
-  --font-size--h2: 4.4rem;
+  --font-size--h1: 5.4rem;
+  --font-size--h2: 4.6rem;
   --font-size--h3: 2.6rem;
   --font-size--h4: 2.2rem;
   --font-size--h5: 2rem;
   --font-size--h6: 1.8rem;
-  --font-family--primary: "Uniform", helvetica, arial, sans-serif; // Weights & styles: 400, 500, 700
+  --font-family--primary: "Uniform", "Avenir Next", "Segoe UI", sans-serif; // Weights & styles: 400, 500, 700
   --font-weight--default: 400;
 
   @include media-breakpoint-down(lg) {
     --font-size--lg: 1.6rem;
     --font-size--md: 1.4rem;
     --font-size--sm: 1.3rem;
-    --font-size--h1: 3.2rem;
+    --font-size--h1: 3.4rem;
     --font-size--h2: 2.8rem;
     --font-size--h3: 2.2rem;
     --font-size--h4: 2rem;
@@ -31,21 +31,21 @@
   }
 
   // Colors
-  --blue--color: 205 100%;
-  --blue--lightness: 33%;
+  --blue--color: 221 32%;
+  --blue--lightness: 19%;
 
-  --red--color: 351 81%;
-  --red--lightness: 48%;
+  --red--color: 352 84%;
+  --red--lightness: 40%;
 
-  --yellow--color: 57 100%;
-  --yellow--lightness: 47%;
+  --yellow--color: 39 98%;
+  --yellow--lightness: 57%;
 
-  --green--color: 155 80%;
-  --green--lightness: 33%;
+  --green--color: 160 52%;
+  --green--lightness: 34%;
 
-  --color--brand-a: hsl(var(--green--color) var(--green--lightness));
+  --color--brand-a: hsl(var(--red--color) var(--red--lightness));
   --color--brand-a--dark: hsl(var(--blue--color) calc(var(--blue--lightness) - 4%));
-  --color--brand-a--light: hsl(var(--blue--color) calc(var(--blue--lightness) + 62%));
+  --color--brand-a--light: hsl(var(--red--color) calc(var(--red--lightness) + 45%));
   --color--brand-b: hsl(var(--red--color) var(--red--lightness));
   --color--brand-b--dark: hsl(var(--red--color) calc(var(--red--lightness) - 8%));
   --color--brand-b--light: hsl(var(--red--color) calc(var(--red--lightness) + 45%));
@@ -54,18 +54,18 @@
   --color--success: hsl(var(--green--color) var(--green--lightness));
   --color--success--dark: hsl(var(--green--color) calc(var(--green--lightness) - 6%));
   --color--success--light: hsl(var(--green--color) calc(var(--green--lightness) + 62%));
-  --gray--200: #f9f9f9;
-  --gray--300: #f1f1f1;
-  --gray--500: #dbdbdb;
-  --gray--700: #575756;
-  --gray--900: #00070c;
+  --gray--200: #f1f3f7;
+  --gray--300: #e4e8ef;
+  --gray--500: #c8ced8;
+  --gray--700: #505866;
+  --gray--900: #10141a;
   --color--light: #fff;
-  --color--light-blue: #e1e2ff;
+  --color--light-blue: #e6ebf6;
   --color--dark: var(--gray--900);
   --color--body: var(--gray--700);
-  --color--border: #d9d9d9;
+  --color--border: #d4dbe6;
 
-  --box-shadow: 0 0.5rem 3.5rem rgb(0 0 0 / 5%);
+  --box-shadow: 0 1rem 3rem rgb(16 20 26 / 10%);
 
   // Spacing
   --spacer--primary: 11vh;
