@@ -5,39 +5,48 @@ import SliderModels from "@/components/pages/Home/SliderModels";
 import { fetchModels } from "hooks";
 import { GetServerSideProps } from "next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
-import { useRouter } from "next/router";
-import { ReactElement, useEffect, useState } from "react";
+import { ReactElement, useEffect, useMemo, useState } from "react";
 import { Model } from "types/catalogTypes";
 
 export function Homepage({ modelsData }: { modelsData: any }) {
-  const router = useRouter();
+  const models = useMemo(
+    () => (Array.isArray(modelsData) ? modelsData : []),
+    [modelsData]
+  );
 
-  const [selectedModel, setSelectedModel] = useState<Model>(() => {
-    return modelsData[0];
+  const [selectedModel, setSelectedModel] = useState<Model | null>(() => {
+    return models[0] ?? null;
   });
 
   function setActiveModel(
     e: React.MouseEvent<HTMLButtonElement>,
-    modelId: string
+    modelId: string | number
   ) {
-    const selectedModelIndex = modelsData.findIndex(
+    const selectedModelIndex = models.findIndex(
       (element: Model) => element.id === modelId
     );
 
-    setSelectedModel(modelsData[selectedModelIndex]);
+    if (selectedModelIndex >= 0) {
+      setSelectedModel(models[selectedModelIndex]);
+    }
   }
 
   useEffect(() => {
-    setSelectedModel(modelsData[0]);
-  }, [modelsData, setSelectedModel]);
+    setSelectedModel(models[0] ?? null);
+  }, [models, setSelectedModel]);
+
+  if (models.length === 0) {
+    return null;
+  }
+
   return (
     <>
-      {!modelsData.isLoading ? (
+      {selectedModel ? (
         <>
-          <SelectedModel selectedModel={selectedModel || modelsData} />
+          <SelectedModel selectedModel={selectedModel} />
           <SliderModels
-            selectedModel={selectedModel || modelsData}
-            models={modelsData}
+            selectedModel={selectedModel}
+            models={models}
             onModelSelect={setActiveModel}
           />
         </>

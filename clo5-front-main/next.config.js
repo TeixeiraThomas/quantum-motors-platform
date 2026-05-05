@@ -1,13 +1,11 @@
-// This file sets a custom webpack configuration to use your Next.js app
+const { i18n } = require("./next-i18next.config");
 
 /** @type {import('next').NextConfig} */
-const { i18n } = require("./next-i18next.config");
-const StylelintPlugin = require("stylelint-webpack-plugin");
-
 const nextConfig = {
-  reactStrictMode: false,
-  swcMinify: true,
+  reactStrictMode: true,
+
   i18n,
+
   publicRuntimeConfig: {
     apiUrl: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000",
     environment: process.env.NODE_ENV || "development",
@@ -16,16 +14,21 @@ const nextConfig = {
     apiUrl:
       process.env.API_URL_INTERNAL ||
       process.env.API_URL ||
+      process.env.NEXT_PUBLIC_API_URL ||
       "http://localhost:3000",
   },
+
   webpack(config) {
-    config.plugins.push(new StylelintPlugin());
     const fileLoaderRule = config.module.rules.find(
-      (rule) => rule.test && rule.test.test(".svg")
+      (rule) => rule.test && rule.test.test && rule.test.test(".svg")
     );
-    fileLoaderRule.exclude = /\.svg$/;
+
+    if (fileLoaderRule) {
+      fileLoaderRule.exclude = /\.svg$/i;
+    }
+
     config.module.rules.push({
-      test: /\.svg$/,
+      test: /\.svg$/i,
       use: [
         {
           loader: require.resolve("@svgr/webpack"),
@@ -42,16 +45,12 @@ const nextConfig = {
         },
       ],
     });
+
     return config;
   },
+
   images: {
-    remotePatterns: [
-      {
-        protocol: "http",
-        hostname: "localhost",
-        pathname: "/**",
-      },
-    ],
+    unoptimized: true,
   },
 };
 

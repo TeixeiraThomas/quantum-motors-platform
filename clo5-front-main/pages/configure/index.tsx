@@ -11,7 +11,6 @@ import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import { useRouter } from "next/router";
 import { ReactElement, useCallback, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
-import { useEffectOnce } from "react-use";
 import { ChoicesConfiguration, InitialModel, Status } from "types/catalogTypes";
 import styles from "../../components/global/LayoutConfigurator/LayoutConfigurator.module.scss";
 
@@ -26,7 +25,7 @@ export function Configure({}) {
   );
   const [activeTab, setActiveTab] = useState<string>("outside");
   const [activeSlideIndex, setActiveSlideIndex] = useState<number>(0);
-  const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
+  const [, setIsDrawerOpen] = useState<boolean>(false);
 
   const [initialModel, setInitialModel] = useState<InitialModel>({
     brandColor: "#59a600",
@@ -72,19 +71,31 @@ export function Configure({}) {
         data: any,
         property: "finish" | "battery" | "color"
       ) => {
+        if (!Array.isArray(data)) {
+          return;
+        }
+
         const selectedItem = data.find(
-          (item: any, index: number) => value[property] === item.code
+          (item: any) => value[property] === item.code
         );
 
-        if (selectedItem) {
+        if (selectedItem?.viewReference?.category) {
           activeImageCategory = selectedItem.viewReference.category;
           setActiveTab(activeImageCategory);
 
+          const activeCategoryImages =
+            configureData?.value?.images?.[activeImageCategory];
+          if (!activeCategoryImages || !selectedItem?.viewReference?.view) {
+            return;
+          }
+
           activeImageIndex = Object.keys(
-            configureData?.value?.images[activeImageCategory]
+            activeCategoryImages
           ).indexOf(selectedItem.viewReference.view);
 
-          setActiveSlideIndex(activeImageIndex);
+          if (activeImageIndex >= 0) {
+            setActiveSlideIndex(activeImageIndex);
+          }
         }
       };
 
@@ -96,7 +107,7 @@ export function Configure({}) {
           setActiveImageAndCategory(configureData?.value?.batteries, "battery");
           break;
         case "color":
-          setActiveImageAndCategory(configureData?.value.colors, "color");
+          setActiveImageAndCategory(configureData?.value?.colors, "color");
           break;
       }
     },
@@ -116,17 +127,15 @@ export function Configure({}) {
     return () => subscription.unsubscribe();
   }, [form, handleImageSwitch, handleChoicesSelect]);
 
-  useEffect(() => {}, [isDrawerOpen]);
-
-  useEffect(() => {}, [configureData?.value]);
-
-  useEffectOnce(() => {
-    setInitialModel({
-      brandColor: "#59a600", // Default color if no color is selected
-      modelName: configureData?.value?.model.name,
-      logoUrl: "/images/logo.png",
-    });
-  });
+  useEffect(() => {
+    if (configureData?.status === Status.SUCCESS && configureData?.value?.model) {
+      setInitialModel({
+        brandColor: "#59a600",
+        modelName: configureData?.value?.model?.name ?? "",
+        logoUrl: "/images/logo.png",
+      });
+    }
+  }, [configureData]);
 
   // Vehicle combination not found
   if (

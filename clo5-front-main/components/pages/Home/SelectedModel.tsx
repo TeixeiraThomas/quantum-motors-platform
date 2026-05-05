@@ -16,6 +16,7 @@ const SelectedModel = ({ selectedModel }: Props) => {
   const { t } = useTranslation(["common", "catalog"]);
   const MediaAboveLG = useMediaQuery(mediaLG);
   const MediaAboveXL = useMediaQuery(mediaXL);
+  const selectedModelId = selectedModel?.id;
 
   return (
     <div
@@ -88,15 +89,17 @@ const SelectedModel = ({ selectedModel }: Props) => {
             />
           ) : null}
 
-          <ButtonWithLink
-            className={`${styles["selected-model__button"]}`}
-            href={{
-              pathname: "/configure",
-              query: { model_id: selectedModel.id },
-            }}
-          >
-            {t("common:configure")}
-          </ButtonWithLink>
+          {selectedModelId ? (
+            <ButtonWithLink
+              className={`${styles["selected-model__button"]}`}
+              href={{
+                pathname: "/configure",
+                query: { model_id: selectedModelId },
+              }}
+            >
+              {t("common:configure")}
+            </ButtonWithLink>
+          ) : null}
         </motion.div>
       </AnimatePresence>
     </div>

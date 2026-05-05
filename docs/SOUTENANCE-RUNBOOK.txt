@@ -1,0 +1,189 @@
+SPE-CLO5 - Quantum Motors - Runbook de Soutenance
+Date: 2026-04-27
+Projet: Quantum Motors (groupe)
+
+========================================================================
+1) OBJECTIF GLOBAL (30 secondes)
+========================================================================
+Notre objectif etait de reprendre une application legacy et de livrer:
+- une infra clusterisee automatisable par Ansible
+- une chaine CI/CD complete avec deploiement preprod puis prod blue/green
+- un reverse proxy pour exposer les services par domaines
+- une collecte centralisee des logs
+- une base de donnees persistante (NFS)
+
+Technos utilisees:
+- Docker Swarm
+- Ansible
+- GitLab + GitLab CI
+- Traefik
+- Loki + Grafana Alloy + Grafana
+- Node.js / Next.js / MariaDB
+
+========================================================================
+2) ARCHITECTURE LIVREE (1 minute)
+========================================================================
+VM1 (172.16.248.64):
+- manager Swarm
+- Traefik
+- export NFS
+- runner GitLab
+
+VM2 (172.16.248.92):
+- worker Swarm
+- MariaDB preprod/prod (volumes NFS)
+- runner GitLab
+
+VM3 (172.16.248.97):
+- worker Swarm
+- SonarQube
+- Loki + Grafana
+- runner GitLab
+
+VM4 (172.16.248.236):
+- GitLab CE en bare metal
+- GitLab Container Registry
+
+Reseaux overlay:
+- public
+- preprod_net
+- prod_net
+- logs_net
+
+========================================================================
+3) LIVRABLES OBLIGATOIRES (ETAPES 1 + 2) (1 minute)
+========================================================================
+Playbooks imposes:
+- ansible/playbooks/infrastructure.yml
+- ansible/playbooks/gitlab.yml
+- ansible/playbooks/runners.yml
+
+Roles imposes:
+- ansible/roles/docker_swarm
+- ansible/roles/SonarQube
+- ansible/roles/install_gitlab
+- ansible/roles/gitlab_runner
+
+Tous sont presents et utilises par les playbooks.
+
+========================================================================
+4) PIPELINE CI/CD (1 minute)
+========================================================================
+Stages definis dans .gitlab-ci.yml:
+1. test
+2. build
+3. deploy_preprod
+4. test_preprod
+5. deploy_green
+6. test_green
+7. switch_prod
+
+Logique respectee:
+- tests unitaires/lint avant tout deploiement
+- build/push images seulement si tests OK
+- deploiement preprod puis smoke test preprod
+- sur main: deploiement prod green + smoke test green
+- bascule blue -> green seulement si tests green OK
+
+========================================================================
+5) PREUVES A MONTRER EN LIVE (2 a 3 minutes)
+========================================================================
+5.1 Pipeline GitLab
+Montrer:
+- pipeline develop en statut "Passed"
+- jobs verts: test_backend, lint_backend, lint_front,
+  build_backend, build_frontend, deploy_preprod, test_preprod
+- sur main, montrer aussi deploy_green, test_green, switch_prod
+
+5.2 Smoke tests fonctionnels
+Preprod:
+  sh tests/functional/smoke.sh \
+    http://172.16.248.64 preprod.quantum.local api-preprod.quantum.local
+Attendu:
+  Smoke test passed
+
+Prod live:
+  sh tests/functional/smoke.sh \
+    http://172.16.248.64 front.quantum.local api.quantum.local
+Attendu:
+  Smoke test passed
+
+5.3 Etat Swarm (depuis VM1)
+  sudo docker service ls
+Attendu:
+- preprod_* en 1/1
+- prod-live_* en 1/1
+- traefik_traefik en 1/1
+- logging_loki / logging_grafana-logs / logging_alloy actifs
+- sonarqube actif
+
+5.4 Runners
+Dans GitLab UI:
+- au moins 2 runners online (nous en avons 3)
+
+5.5 Acces HTTP services
+- GitLab: http://172.16.248.236/users/sign_in (200)
+- Registry: http://172.16.248.236:5050/v2/ (401 attendu sans creds)
+- Sonar: http://172.16.248.97:9000 (200)
+- Grafana via Traefik: Host logs.quantum.local (200)
+
+5.6 Logs centralises
+Montrer dans Grafana/Loki:
+- label stack="preprod"
+- traces de requetes API/front apres un smoke test
+
+========================================================================
+6) PERSISTANCE BDD (NFS) (30 secondes)
+========================================================================
+Exigence: les donnees restent apres redeploiement/rebuild.
+Implementation:
+- deploy/preprod.yml: volume NFS preprod
+- deploy/prod-db.yml: volume NFS prod
+- exports NFS sur VM1, conso sur VM2
+
+========================================================================
+7) JUSTIFICATION DES CHOIX (Q/R rapide)
+========================================================================
+Pourquoi Swarm (et pas Kubernetes)?
+- plus simple a operer pour un POC sur 3 noeuds avec contraintes temps
+- suffisant pour overlay networks, services replicas, blue/green
+
+Pourquoi Traefik?
+- routage par labels Docker
+- bon support des domaines front/api et blue/green
+
+Pourquoi Loki/Alloy/Grafana?
+- collecte simple de logs conteneurs sans modifier les apps
+- visu centralisee exploitable en exploitation
+
+Pourquoi GitLab hors cluster (VM4)?
+- conforme au sujet (bare metal sur VM4)
+
+========================================================================
+8) CHECKLIST FINALE AVANT PASSAGE
+========================================================================
+[ ] pipeline develop passee
+[ ] pipeline main passee (si demandee pour blue/green complet)
+[ ] smoke preprod OK
+[ ] smoke prod live OK
+[ ] services swarm en replicas attendues
+[ ] runners online dans GitLab
+[ ] GitLab + Registry + Sonar + Grafana accessibles
+[ ] requetes visibles dans Loki/Grafana
+[ ] docs a jour (README + docs/etape-0bis + PROC-*)
+[ ] token PAT expose revoque (securite)
+
+========================================================================
+9) SCRIPT ORAL COURT (2 minutes)
+========================================================================
+"Nous avons industrialise le projet avec Ansible + Swarm + GitLab CI.
+L'infra est automatisee via trois playbooks imposes: infrastructure, gitlab,
+runners. Le cluster est multi-environnements preprod/prod avec Traefik pour
+les domaines front/api. Notre pipeline est en 7 stages: tests, build, deploiement
+preprod, tests fonctionnels, deploiement green, tests green, puis switch prod.
+Les services applicatifs sont deployes sur le cluster et verifies par smoke tests.
+Nous collectons les logs conteneurs via Alloy vers Loki et les visualisons dans
+Grafana. La base est persistante via NFS entre redeploiements. En live on peut
+montrer pipeline passee, smoke tests OK, services Swarm up, runners online et
+logs preprod visibles." 
+

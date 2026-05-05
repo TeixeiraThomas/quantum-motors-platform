@@ -3,7 +3,6 @@ import * as Tabs from "@radix-ui/react-tabs";
 import { motion } from "framer-motion";
 import { animEasingPrimary } from "lib/globalConstants";
 import { rgbDataURL } from "lib/placeholder";
-import { useTranslation } from "next-i18next";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import type { Swiper as SwiperType } from "swiper";
@@ -13,7 +12,7 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import styles from "./ConfiguratorSlider.module.scss";
 
 type Props = {
-  image: string;
+  image?: string;
   color: any;
   isLoading: boolean;
   activeTab: string;
@@ -30,7 +29,6 @@ const ConfiguratorSlider = ({
   activeSlideIndex,
 }: Props) => {
   const hasHydrated = useHasHydrated();
-  const { t } = useTranslation(["catalog"]);
   const [swiperInstance, setSwiperInstance] = useState<SwiperType>();
   const [outsideThumbsSwiperInstance, setOutsideThumbsSwiperInstance] =
     useState<SwiperType>();
@@ -39,6 +37,7 @@ const ConfiguratorSlider = ({
   const [clickedSlideIndex, setClickedSlideIndex] = useState<number | null>(0);
 
   const outsideIsolatedImages = [0, 1, 3];
+  const displayImage = image || "/images/default-car.jpeg";
 
   useEffect(() => {
     swiperInstance?.slideTo(activeSlideIndex);
@@ -107,28 +106,24 @@ const ConfiguratorSlider = ({
                     height={80}
                   />
                 ) : (
-                  <>
-                    return (
-                    <SwiperSlide
-                      key={0}
-                      className={`${styles["configurator-slider__slider__slide"]}`}
-                      data-isolated-image={true}
+                  <SwiperSlide
+                    key={0}
+                    className={`${styles["configurator-slider__slider__slide"]}`}
+                    data-isolated-image={true}
+                  >
+                    <figure
+                      className={`${styles["configurator-slider__img"]}`}
                     >
-                      <figure
-                        className={`${styles["configurator-slider__img"]}`}
-                      >
-                        <Image
-                          src={image}
-                          width={1200}
-                          height={675}
-                          alt={"Image du véhicule"}
-                          placeholder="blur"
-                          blurDataURL={rgbDataURL(245, 245, 245)}
-                        />
-                      </figure>
-                    </SwiperSlide>
-                    );
-                  </>
+                      <Image
+                        src={displayImage}
+                        width={1200}
+                        height={675}
+                        alt={"Image du vehicule"}
+                        placeholder="blur"
+                        blurDataURL={rgbDataURL(245, 245, 245)}
+                      />
+                    </figure>
+                  </SwiperSlide>
                 )}
               </Swiper>
             </Tabs.Content>

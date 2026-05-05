@@ -69,6 +69,9 @@ const SliderModels = ({ models, selectedModel, onModelSelect }: Props) => {
               className={`${styles["slider-models__card__button"]}`}
               onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                 e.stopPropagation();
+                if (!slide?.id) {
+                  return;
+                }
                 router.push({
                   pathname: "/configure",
                   query: { model_id: slide.id },
