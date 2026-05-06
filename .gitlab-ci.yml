@@ -119,10 +119,23 @@ deploy_preprod:
     - export DB_ROOT_PASSWORD="$PREPROD_DB_ROOT_PASSWORD"
     - export DB_PASSWORD="$PREPROD_DB_PASSWORD"
     - export ADMIN_PASSWORD="$BACKEND_ADMIN_PASSWORD"
+    - |
+      for image in "$BACKEND_IMAGE:$IMAGE_TAG" "$FRONTEND_IMAGE:$IMAGE_TAG"; do
+        attempt=0
+        until docker pull "$image"; do
+          attempt=$((attempt + 1))
+          if [ "$attempt" -ge 20 ]; then
+            echo "Failed to pull $image after $attempt attempts"
+            exit 1
+          fi
+          echo "Retrying pull for $image ($attempt/20)"
+          sleep 3
+        done
+      done
     - docker stack rm preprod || true
     - while docker stack ls --format '{{.Name}}' | grep -qx 'preprod'; do sleep 2; done
     - docker run --rm -v "$NFS_EXPORTS_ROOT:/nfs" docker:24.0.7-cli sh -c 'rm -rf /nfs/preprod/mariadb && mkdir -p /nfs/preprod/mariadb'
-    - docker stack deploy --with-registry-auth -c deploy/preprod.yml preprod
+    - docker stack deploy --resolve-image=never --with-registry-auth -c deploy/preprod.yml preprod
     - until docker service ls --format '{{.Name}} {{.Replicas}}' | grep -q '^preprod_mariadb-preprod 1/1$'; do sleep 5; done
     - until docker service ls --format '{{.Name}} {{.Replicas}}' | grep -q '^preprod_api-preprod 1/1$'; do sleep 5; done
     - until docker service ls --format '{{.Name}} {{.Replicas}}' | grep -q '^preprod_front-preprod 1/1$'; do sleep 5; done
@@ -156,12 +169,25 @@ bootstrap_prod_blue:
     - export DB_PASSWORD="$PROD_DB_PASSWORD"
     - export ADMIN_PASSWORD="$BACKEND_ADMIN_PASSWORD"
     - |
-      if docker stack ls --format '{{.Name}}' | grep -qx 'prod-db'; then
-        echo "prod-db stack already exists, skipping prod-db deploy"
+      for image in "$BACKEND_IMAGE:$IMAGE_TAG" "$FRONTEND_IMAGE:$IMAGE_TAG"; do
+        attempt=0
+        until docker pull "$image"; do
+          attempt=$((attempt + 1))
+          if [ "$attempt" -ge 20 ]; then
+            echo "Failed to pull $image after $attempt attempts"
+            exit 1
+          fi
+          echo "Retrying pull for $image ($attempt/20)"
+          sleep 3
+        done
+      done
+    - |
+      if docker service ls --format '{{.Name}}' | grep -qx 'prod-db_mariadb-prod'; then
+        echo "prod-db_mariadb-prod already exists, skipping prod-db deploy"
       else
-        docker stack deploy --with-registry-auth -c deploy/prod-db.yml prod-db
+        docker stack deploy --resolve-image=never --with-registry-auth -c deploy/prod-db.yml prod-db
       fi
-    - docker stack deploy --with-registry-auth -c deploy/prod-blue-live.yml prod-live
+    - docker stack deploy --resolve-image=never --with-registry-auth -c deploy/prod-blue-live.yml prod-live
     - until docker service ls --format '{{.Name}} {{.Replicas}}' | grep -q '^prod-db_mariadb-prod 1/1$'; do sleep 5; done
     - until docker service ls --format '{{.Name}} {{.Replicas}}' | grep -q '^prod-live_api-prod-blue 1/1$'; do sleep 5; done
     - until docker service ls --format '{{.Name}} {{.Replicas}}' | grep -q '^prod-live_front-prod-blue 1/1$'; do sleep 5; done
@@ -182,12 +208,25 @@ deploy_green:
     - export DB_PASSWORD="$PROD_DB_PASSWORD"
     - export ADMIN_PASSWORD="$BACKEND_ADMIN_PASSWORD"
     - |
-      if docker stack ls --format '{{.Name}}' | grep -qx 'prod-db'; then
-        echo "prod-db stack already exists, skipping prod-db deploy"
+      for image in "$BACKEND_IMAGE:$IMAGE_TAG" "$FRONTEND_IMAGE:$IMAGE_TAG"; do
+        attempt=0
+        until docker pull "$image"; do
+          attempt=$((attempt + 1))
+          if [ "$attempt" -ge 20 ]; then
+            echo "Failed to pull $image after $attempt attempts"
+            exit 1
+          fi
+          echo "Retrying pull for $image ($attempt/20)"
+          sleep 3
+        done
+      done
+    - |
+      if docker service ls --format '{{.Name}}' | grep -qx 'prod-db_mariadb-prod'; then
+        echo "prod-db_mariadb-prod already exists, skipping prod-db deploy"
       else
-        docker stack deploy --with-registry-auth -c deploy/prod-db.yml prod-db
+        docker stack deploy --resolve-image=never --with-registry-auth -c deploy/prod-db.yml prod-db
       fi
-    - docker stack deploy --with-registry-auth -c deploy/prod-green.yml prodgreen
+    - docker stack deploy --resolve-image=never --with-registry-auth -c deploy/prod-green.yml prodgreen
     - until docker service ls --format '{{.Name}} {{.Replicas}}' | grep -q '^prod-db_mariadb-prod 1/1$'; do sleep 5; done
     - until docker service ls --format '{{.Name}} {{.Replicas}}' | grep -q '^prodgreen_api-prod-green 1/1$'; do sleep 5; done
     - until docker service ls --format '{{.Name}} {{.Replicas}}' | grep -q '^prodgreen_front-prod-green 1/1$'; do sleep 5; done
@@ -216,7 +255,20 @@ switch_prod:
   script:
     - export DB_PASSWORD="$PROD_DB_PASSWORD"
     - export ADMIN_PASSWORD="$BACKEND_ADMIN_PASSWORD"
-    - docker stack deploy --prune --with-registry-auth -c deploy/prod-green-live.yml prod-live
+    - |
+      for image in "$BACKEND_IMAGE:$IMAGE_TAG" "$FRONTEND_IMAGE:$IMAGE_TAG"; do
+        attempt=0
+        until docker pull "$image"; do
+          attempt=$((attempt + 1))
+          if [ "$attempt" -ge 20 ]; then
+            echo "Failed to pull $image after $attempt attempts"
+            exit 1
+          fi
+          echo "Retrying pull for $image ($attempt/20)"
+          sleep 3
+        done
+      done
+    - docker stack deploy --resolve-image=never --prune --with-registry-auth -c deploy/prod-green-live.yml prod-live
     - docker stack rm prodgreen || true
     - until docker service ls --format '{{.Name}} {{.Replicas}}' | grep -q '^prod-live_api-prod-green 1/1$'; do sleep 5; done
     - until docker service ls --format '{{.Name}} {{.Replicas}}' | grep -q '^prod-live_front-prod-green 1/1$'; do sleep 5; done
