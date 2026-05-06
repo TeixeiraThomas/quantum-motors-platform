@@ -155,7 +155,12 @@ bootstrap_prod_blue:
     - export DB_ROOT_PASSWORD="$PROD_DB_ROOT_PASSWORD"
     - export DB_PASSWORD="$PROD_DB_PASSWORD"
     - export ADMIN_PASSWORD="$BACKEND_ADMIN_PASSWORD"
-    - docker stack deploy --with-registry-auth -c deploy/prod-db.yml prod-db
+    - |
+      if docker stack ls --format '{{.Name}}' | grep -qx 'prod-db'; then
+        echo "prod-db stack already exists, skipping prod-db deploy"
+      else
+        docker stack deploy --with-registry-auth -c deploy/prod-db.yml prod-db
+      fi
     - docker stack deploy --with-registry-auth -c deploy/prod-blue-live.yml prod-live
     - until docker service ls --format '{{.Name}} {{.Replicas}}' | grep -q '^prod-db_mariadb-prod 1/1$'; do sleep 5; done
     - until docker service ls --format '{{.Name}} {{.Replicas}}' | grep -q '^prod-live_api-prod-blue 1/1$'; do sleep 5; done
@@ -176,7 +181,12 @@ deploy_green:
     - export DB_ROOT_PASSWORD="$PROD_DB_ROOT_PASSWORD"
     - export DB_PASSWORD="$PROD_DB_PASSWORD"
     - export ADMIN_PASSWORD="$BACKEND_ADMIN_PASSWORD"
-    - docker stack deploy --with-registry-auth -c deploy/prod-db.yml prod-db
+    - |
+      if docker stack ls --format '{{.Name}}' | grep -qx 'prod-db'; then
+        echo "prod-db stack already exists, skipping prod-db deploy"
+      else
+        docker stack deploy --with-registry-auth -c deploy/prod-db.yml prod-db
+      fi
     - docker stack deploy --with-registry-auth -c deploy/prod-green.yml prodgreen
     - until docker service ls --format '{{.Name}} {{.Replicas}}' | grep -q '^prod-db_mariadb-prod 1/1$'; do sleep 5; done
     - until docker service ls --format '{{.Name}} {{.Replicas}}' | grep -q '^prodgreen_api-prod-green 1/1$'; do sleep 5; done
