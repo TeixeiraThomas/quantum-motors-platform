@@ -6,7 +6,7 @@ const { publicRuntimeConfig, serverRuntimeConfig } = getConfig() || {};
 const API_BASE_URL =
   typeof window === 'undefined'
     ? serverRuntimeConfig?.apiUrl || publicRuntimeConfig?.apiUrl || 'http://localhost:3000'
-    : publicRuntimeConfig?.apiUrl || 'http://localhost:3000';
+    : publicRuntimeConfig?.apiUrl || '/api';
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,

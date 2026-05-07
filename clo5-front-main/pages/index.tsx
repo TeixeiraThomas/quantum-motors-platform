@@ -41,8 +41,7 @@ export function Homepage({ modelsData }: { modelsData: any }) {
         <h1>Catalogue temporairement indisponible</h1>
         <p>
           Les donnees modeles ne sont pas chargees. Verifie que l API backend
-          est demarree sur <code>http://localhost:3000</code>, puis recharge la
-          page.
+          est disponible, puis recharge la page.
         </p>
       </section>
     );
