@@ -1,0 +1,176 @@
+- name: Validate monitoring groups
+  ansible.builtin.assert:
+    that:
+      - groups['monitoring_nodes'] | default([]) | length > 0
+      - groups['swarm_managers'] | default([]) | length > 0
+    fail_msg: >-
+      Monitoring stack requires at least one host in monitoring_nodes and swarm_managers.
+  run_once: true
+
+- name: Install Docker stack Python dependencies
+  ansible.builtin.apt:
+    name:
+      - python3-jsondiff
+    state: present
+    update_cache: true
+
+- name: Ensure Prometheus data directory exists on the monitoring node
+  ansible.builtin.file:
+    path: "{{ prometheus_data_dir }}"
+    state: directory
+    owner: "65534"
+    group: "65534"
+    mode: "0755"
+  delegate_to: "{{ groups['monitoring_nodes'][0] }}"
+  run_once: true
+
+- name: Ensure Alertmanager data directory exists on the monitoring node
+  ansible.builtin.file:
+    path: "{{ alertmanager_data_dir }}"
+    state: directory
+    owner: "65534"
+    group: "65534"
+    mode: "0755"
+  delegate_to: "{{ groups['monitoring_nodes'][0] }}"
+  run_once: true
+
+- name: Ensure Uptime Kuma data directory exists on the monitoring node
+  ansible.builtin.file:
+    path: "{{ uptime_kuma_data_dir }}"
+    state: directory
+    owner: "1000"
+    group: "1000"
+    mode: "0755"
+  delegate_to: "{{ groups['monitoring_nodes'][0] }}"
+  run_once: true
+
+- name: Ensure monitoring stack directory exists
+  ansible.builtin.file:
+    path: /opt/quantum-motors/deploy/monitoring
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Copy monitoring stack definition
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../../deploy/monitoring.yml"
+    dest: /opt/quantum-motors/deploy/monitoring.yml
+    owner: root
+    group: root
+    mode: "0644"
+  register: monitoring_stack_definition
+
+- name: Copy Prometheus configuration
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../../deploy/monitoring/prometheus.yml"
+    dest: /opt/quantum-motors/deploy/monitoring/prometheus.yml
+    owner: root
+    group: root
+    mode: "0644"
+  register: monitoring_prometheus_configuration
+
+- name: Copy Prometheus alert rules
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../../deploy/monitoring/rules.yml"
+    dest: /opt/quantum-motors/deploy/monitoring/rules.yml
+    owner: root
+    group: root
+    mode: "0644"
+  register: monitoring_prometheus_rules
+
+- name: Render Alertmanager configuration
+  ansible.builtin.template:
+    src: alertmanager.yml.j2
+    dest: /opt/quantum-motors/deploy/monitoring/alertmanager.yml
+    owner: root
+    group: root
+    mode: "0644"
+  register: monitoring_alertmanager_configuration
+
+- name: Copy blackbox exporter configuration
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../../deploy/monitoring/blackbox.yml"
+    dest: /opt/quantum-motors/deploy/monitoring/blackbox.yml
+    owner: root
+    group: root
+    mode: "0644"
+  register: monitoring_blackbox_configuration
+
+- name: Compute desired monitoring deployment hash
+  ansible.builtin.shell: >-
+    sha256sum
+    /opt/quantum-motors/deploy/monitoring.yml
+    /opt/quantum-motors/deploy/monitoring/prometheus.yml
+    /opt/quantum-motors/deploy/monitoring/rules.yml
+    /opt/quantum-motors/deploy/monitoring/alertmanager.yml
+    /opt/quantum-motors/deploy/monitoring/blackbox.yml
+    | sha256sum
+    | awk '{print $1}'
+  register: monitoring_deployment_hash
+  changed_when: false
+
+- name: Check current monitoring deployment hash
+  ansible.builtin.stat:
+    path: /opt/quantum-motors/deploy/monitoring/.deployment-hash
+  register: monitoring_deployment_hash_file
+
+- name: Read current monitoring deployment hash
+  ansible.builtin.slurp:
+    path: /opt/quantum-motors/deploy/monitoring/.deployment-hash
+  register: monitoring_applied_hash
+  when: monitoring_deployment_hash_file.stat.exists
+
+- name: Determine whether monitoring stack must be recreated
+  ansible.builtin.set_fact:
+    monitoring_stack_recreate_required: >-
+      {{
+        (not monitoring_deployment_hash_file.stat.exists)
+        or ((monitoring_applied_hash.content | default('') | b64decode | trim) != (monitoring_deployment_hash.stdout | trim))
+      }}
+
+- name: Recreate monitoring stack when Swarm configs changed
+  community.docker.docker_stack:
+    state: absent
+    name: "{{ monitoring_stack_name }}"
+  when: monitoring_stack_recreate_required
+
+- name: Wait for monitoring stack removal
+  ansible.builtin.command:
+    argv:
+      - docker
+      - stack
+      - ls
+      - --format
+      - "{{ '{{.Name}}' }}"
+  register: monitoring_stack_list
+  changed_when: false
+  retries: 30
+  delay: 2
+  until: monitoring_stack_name not in monitoring_stack_list.stdout_lines
+  when: monitoring_stack_recreate_required
+
+- name: Authenticate manager against Docker Hub when credentials are provided
+  community.docker.docker_login:
+    registry_url: https://index.docker.io/v1/
+    username: "{{ dockerhub_username }}"
+    password: "{{ dockerhub_token }}"
+  when:
+    - dockerhub_username | default('') | length > 0
+    - dockerhub_token | default('') | length > 0
+
+- name: Deploy monitoring stack
+  community.docker.docker_stack:
+    state: present
+    name: "{{ monitoring_stack_name }}"
+    with_registry_auth: true
+    compose:
+      - /opt/quantum-motors/deploy/monitoring.yml
+
+- name: Persist monitoring deployment hash
+  ansible.builtin.copy:
+    content: "{{ monitoring_deployment_hash.stdout | trim }}\n"
+    dest: /opt/quantum-motors/deploy/monitoring/.deployment-hash
+    owner: root
+    group: root
+    mode: "0644"

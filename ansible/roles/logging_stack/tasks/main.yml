@@ -80,6 +80,24 @@
     mode: "0644"
   register: logging_grafana_datasource_configuration
 
+- name: Copy Grafana dashboard provider configuration
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../../deploy/logging/grafana-dashboards.yml"
+    dest: /opt/quantum-motors/deploy/logging/grafana-dashboards.yml
+    owner: root
+    group: root
+    mode: "0644"
+  register: logging_grafana_dashboard_provider_configuration
+
+- name: Copy Grafana observability dashboard configuration
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../../deploy/logging/dashboard-quantum-observability.json"
+    dest: /opt/quantum-motors/deploy/logging/dashboard-quantum-observability.json
+    owner: root
+    group: root
+    mode: "0644"
+  register: logging_grafana_dashboard_configuration
+
 - name: Compute desired logging deployment hash
   ansible.builtin.shell: >-
     sha256sum
@@ -87,6 +105,8 @@
     /opt/quantum-motors/deploy/logging/loki-config.yml
     /opt/quantum-motors/deploy/logging/config.alloy
     /opt/quantum-motors/deploy/logging/grafana-datasource.yml
+    /opt/quantum-motors/deploy/logging/grafana-dashboards.yml
+    /opt/quantum-motors/deploy/logging/dashboard-quantum-observability.json
     | sha256sum
     | awk '{print $1}'
   register: logging_deployment_hash
@@ -132,10 +152,20 @@
   until: logging_stack_name not in logging_stack_list.stdout_lines
   when: logging_stack_recreate_required
 
+- name: Authenticate manager against Docker Hub when credentials are provided
+  community.docker.docker_login:
+    registry_url: https://index.docker.io/v1/
+    username: "{{ dockerhub_username }}"
+    password: "{{ dockerhub_token }}"
+  when:
+    - dockerhub_username | default('') | length > 0
+    - dockerhub_token | default('') | length > 0
+
 - name: Deploy logging stack
   community.docker.docker_stack:
     state: present
     name: "{{ logging_stack_name }}"
+    with_registry_auth: true
     compose:
       - /opt/quantum-motors/deploy/logging.yml
 

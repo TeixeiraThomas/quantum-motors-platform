@@ -1,0 +1,85 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - monitoring_alertmanager:9093
+
+rule_files:
+  - /etc/prometheus/rules.yml
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets:
+          - localhost:9090
+
+  - job_name: node-exporter
+    dns_sd_configs:
+      - names:
+          - tasks.monitoring_node-exporter
+        type: A
+        port: 9100
+
+  - job_name: cadvisor
+    dns_sd_configs:
+      - names:
+          - tasks.monitoring_cadvisor
+        type: A
+        port: 8080
+
+  - job_name: blackbox-exporter
+    static_configs:
+      - targets:
+          - monitoring_blackbox-exporter:9115
+
+  - job_name: blackbox-http-probes
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+          - http://monitoring_prometheus:9090/-/healthy
+          - http://monitoring_uptime-kuma:3001
+          - http://logging_loki:3100/ready
+          - http://logging_grafana-logs:3000/api/health
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: monitoring_blackbox-exporter:9115
+
+  - job_name: blackbox-front-live
+    metrics_path: /probe
+    params:
+      module: [http_front_live]
+    static_configs:
+      - targets:
+          - http://172.16.248.64/
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: monitoring_blackbox-exporter:9115
+
+  - job_name: blackbox-api-live
+    metrics_path: /probe
+    params:
+      module: [http_api_live]
+    static_configs:
+      - targets:
+          - http://172.16.248.64/health
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: monitoring_blackbox-exporter:9115

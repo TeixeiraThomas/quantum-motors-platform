@@ -1,0 +1,50 @@
+- name: Ensure cron package is installed
+  ansible.builtin.apt:
+    name: cron
+    state: present
+    update_cache: true
+  when: backup_enabled
+
+- name: Ensure cron service is enabled and started
+  ansible.builtin.service:
+    name: cron
+    state: started
+    enabled: true
+  when: backup_enabled
+
+- name: Ensure backup root directory exists
+  ansible.builtin.file:
+    path: "{{ backup_root_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: backup_enabled
+
+- name: Deploy backup script
+  ansible.builtin.template:
+    src: quantum-backup-node.sh.j2
+    dest: /usr/local/bin/quantum-backup-node.sh
+    owner: root
+    group: root
+    mode: "0750"
+  when: backup_enabled
+
+- name: Deploy restore script
+  ansible.builtin.template:
+    src: quantum-restore-node.sh.j2
+    dest: /usr/local/bin/quantum-restore-node.sh
+    owner: root
+    group: root
+    mode: "0750"
+  when: backup_enabled
+
+- name: Schedule daily node backup
+  ansible.builtin.cron:
+    name: "Quantum Motors node backup"
+    user: root
+    minute: "{{ backup_cron_minute }}"
+    hour: "{{ backup_cron_hour }}"
+    job: "/usr/local/bin/quantum-backup-node.sh >> /var/log/quantum-backup.log 2>&1"
+    state: present
+  when: backup_enabled

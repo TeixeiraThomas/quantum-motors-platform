@@ -1,0 +1,187 @@
+version: "3.8"
+
+services:
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=15d
+      - --web.enable-lifecycle
+    configs:
+      - source: prometheus_config
+        target: /etc/prometheus/prometheus.yml
+      - source: prometheus_rules
+        target: /etc/prometheus/rules.yml
+    volumes:
+      - /srv/prometheus:/prometheus
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - monitoring_net
+      - public
+    deploy:
+      placement:
+        constraints:
+          - node.labels.monitoring == true
+      resources:
+        reservations:
+          cpus: "0.10"
+          memory: 256M
+        limits:
+          cpus: "0.75"
+          memory: 1024M
+      labels:
+        - traefik.enable=true
+        - traefik.docker.network=public
+        - traefik.http.routers.prometheus.rule=Host(`prometheus.quantum.local`)
+        - traefik.http.routers.prometheus.entrypoints=web
+        - traefik.http.services.prometheus.loadbalancer.server.port=9090
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yml
+      - --storage.path=/alertmanager
+    configs:
+      - source: alertmanager_config
+        target: /etc/alertmanager/alertmanager.yml
+    volumes:
+      - /srv/alertmanager:/alertmanager
+    networks:
+      - monitoring_net
+      - public
+    deploy:
+      placement:
+        constraints:
+          - node.labels.monitoring == true
+      resources:
+        reservations:
+          cpus: "0.05"
+          memory: 64M
+        limits:
+          cpus: "0.25"
+          memory: 256M
+      labels:
+        - traefik.enable=true
+        - traefik.docker.network=public
+        - traefik.http.routers.alertmanager.rule=Host(`alerts.quantum.local`)
+        - traefik.http.routers.alertmanager.entrypoints=web
+        - traefik.http.services.alertmanager.loadbalancer.server.port=9093
+
+  blackbox-exporter:
+    image: prom/blackbox-exporter:v0.25.0
+    command:
+      - --config.file=/etc/blackbox/config.yml
+    configs:
+      - source: blackbox_config
+        target: /etc/blackbox/config.yml
+    networks:
+      - monitoring_net
+      - logs_net
+    deploy:
+      placement:
+        constraints:
+          - node.labels.monitoring == true
+      resources:
+        reservations:
+          cpus: "0.05"
+          memory: 64M
+        limits:
+          cpus: "0.25"
+          memory: 128M
+
+  node-exporter:
+    image: prom/node-exporter:v1.8.1
+    command:
+      - --path.procfs=/host/proc
+      - --path.sysfs=/host/sys
+      - --path.rootfs=/host
+      - --collector.filesystem.mount-points-exclude=^/(dev|proc|sys|var/lib/docker/.+|var/lib/containers/storage/.+)($$|/)
+      - --collector.filesystem.fs-types-exclude=^(autofs|binfmt_misc|bpf|cgroup2?|configfs|debugfs|devpts|devtmpfs|fusectl|hugetlbfs|mqueue|nsfs|overlay|proc|pstore|rpc_pipefs|securityfs|selinuxfs|squashfs|sysfs|tracefs)$$
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/host:ro,rslave
+    networks:
+      - monitoring_net
+    deploy:
+      mode: global
+      labels:
+        - prometheus-job=node-exporter
+      resources:
+        reservations:
+          cpus: "0.05"
+          memory: 64M
+        limits:
+          cpus: "0.25"
+          memory: 128M
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    command:
+      - -docker_only=true
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+      - /dev/disk:/dev/disk:ro
+    networks:
+      - monitoring_net
+    deploy:
+      mode: global
+      labels:
+        - prometheus-job=cadvisor
+      resources:
+        reservations:
+          cpus: "0.10"
+          memory: 96M
+        limits:
+          cpus: "0.50"
+          memory: 256M
+
+  uptime-kuma:
+    image: louislam/uptime-kuma:2-slim
+    volumes:
+      - /srv/uptime-kuma:/app/data
+    networks:
+      - monitoring_net
+      - public
+    deploy:
+      placement:
+        constraints:
+          - node.labels.monitoring == true
+      resources:
+        reservations:
+          cpus: "0.10"
+          memory: 128M
+        limits:
+          cpus: "0.50"
+          memory: 512M
+      labels:
+        - traefik.enable=true
+        - traefik.docker.network=public
+        - traefik.http.routers.status-page.rule=Host(`status.quantum.local`)
+        - traefik.http.routers.status-page.entrypoints=web
+        - traefik.http.services.status-page.loadbalancer.server.port=3001
+
+configs:
+  prometheus_config:
+    file: ./monitoring/prometheus.yml
+  prometheus_rules:
+    file: ./monitoring/rules.yml
+  alertmanager_config:
+    file: ./monitoring/alertmanager.yml
+  blackbox_config:
+    file: ./monitoring/blackbox.yml
+
+networks:
+  monitoring_net:
+    external: true
+    name: monitoring_net
+  logs_net:
+    external: true
+    name: logs_net
+  public:
+    external: true
+    name: public

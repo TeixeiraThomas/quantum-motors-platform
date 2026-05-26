@@ -27,6 +27,9 @@ L'infrastructure expose les domaines suivants (tous pointent vers la même IP, T
 | `preprod.quantum.local` | Frontend Preprod | 80 |
 | `api-preprod.quantum.local` | Backend Preprod | 80 |
 | `logs.quantum.local` | Grafana Logs | 80 |
+| `status.quantum.local` | Uptime Kuma status page | 80 |
+| `prometheus.quantum.local` | Prometheus UI | 80 |
+| `alerts.quantum.local` | Alertmanager UI | 80 |
 
 ---
 
@@ -50,7 +53,8 @@ Start-Process notepad -ArgumentList "C:\Windows\System32\drivers\etc\hosts" -Ver
 172.16.248.64   front-green.quantum.local api-green.quantum.local
 172.16.248.64   front-blue.quantum.local api-blue.quantum.local
 172.16.248.64   preprod.quantum.local api-preprod.quantum.local
-172.16.248.64   logs.quantum.local
+172.16.248.64   logs.quantum.local status.quantum.local
+172.16.248.64   prometheus.quantum.local alerts.quantum.local
 ```
 
 **Sauvegarde :** Ctrl+S
@@ -78,7 +82,8 @@ sudo vi /etc/hosts
 172.16.248.64   front-green.quantum.local api-green.quantum.local
 172.16.248.64   front-blue.quantum.local api-blue.quantum.local
 172.16.248.64   preprod.quantum.local api-preprod.quantum.local
-172.16.248.64   logs.quantum.local
+172.16.248.64   logs.quantum.local status.quantum.local
+172.16.248.64   prometheus.quantum.local alerts.quantum.local
 ```
 
 **Sauvegarde :**

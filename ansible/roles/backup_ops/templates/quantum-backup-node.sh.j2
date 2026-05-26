@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+backup_root="{{ backup_root_dir }}"
+retain_days="{{ backup_retain_days }}"
+hostname_short="$(hostname -s)"
+timestamp="$(date +%Y%m%d-%H%M%S)"
+target_dir="${backup_root}/${hostname_short}/${timestamp}"
+manifest="${target_dir}/manifest.txt"
+
+if [ -z "$backup_root" ] || [ "$backup_root" = "/" ]; then
+  echo "Unsafe backup_root value: '$backup_root'"
+  exit 1
+fi
+
+mkdir -p "$target_dir"
+touch "$manifest"
+
+{% for include_path in backup_include_paths %}
+if [ -d "{{ include_path }}" ]; then
+  archive_name="$(echo "{{ include_path }}" | sed 's#^/##; s#/#_#g').tar.gz"
+  tar -czf "${target_dir}/${archive_name}" "{{ include_path }}"
+  echo "{{ include_path }}" >> "$manifest"
+fi
+{% endfor %}
+
+find "${backup_root}/${hostname_short}" -mindepth 1 -maxdepth 1 -type d -mtime "+${retain_days}" -exec rm -rf {} +
+
+echo "Backup completed: ${target_dir}"

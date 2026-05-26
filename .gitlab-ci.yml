@@ -151,6 +151,7 @@ test_preprod:
     - if: '$CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH == "main"'
   script:
     - docker run --rm --network host -i curlimages/curl:8.7.1 sh -s -- "http://127.0.0.1" preprod.quantum.local api-preprod.quantum.local < tests/functional/smoke.sh
+    - docker run --rm --network host -i curlimages/curl:8.7.1 sh -s -- "http://127.0.0.1:3100" preprod < tests/functional/log_queries.sh
 
 bootstrap_prod_blue:
   stage: deploy_green

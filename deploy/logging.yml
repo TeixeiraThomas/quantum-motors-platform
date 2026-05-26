@@ -67,6 +67,10 @@ services:
     configs:
       - source: grafana_loki_datasource
         target: /etc/grafana/provisioning/datasources/ds.yml
+      - source: grafana_dashboard_provider
+        target: /etc/grafana/provisioning/dashboards/provider.yml
+      - source: grafana_observability_dashboard
+        target: /etc/grafana/provisioning/dashboards/dashboard-quantum-observability.json
     volumes:
       - /srv/grafana:/var/lib/grafana
     networks:
@@ -97,6 +101,10 @@ configs:
     file: ./logging/config.alloy
   grafana_loki_datasource:
     file: ./logging/grafana-datasource.yml
+  grafana_dashboard_provider:
+    file: ./logging/grafana-dashboards.yml
+  grafana_observability_dashboard:
+    file: ./logging/dashboard-quantum-observability.json
 
 networks:
   logs_net:

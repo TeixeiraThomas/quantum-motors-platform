@@ -21,9 +21,19 @@
     group: root
     mode: "0644"
 
+- name: Authenticate manager against Docker Hub when credentials are provided
+  community.docker.docker_login:
+    registry_url: https://index.docker.io/v1/
+    username: "{{ dockerhub_username }}"
+    password: "{{ dockerhub_token }}"
+  when:
+    - dockerhub_username | default('') | length > 0
+    - dockerhub_token | default('') | length > 0
+
 - name: Deploy Traefik stack
   community.docker.docker_stack:
     state: present
     name: "{{ traefik_stack_name }}"
+    with_registry_auth: true
     compose:
       - /opt/quantum-motors/deploy/traefik.yml

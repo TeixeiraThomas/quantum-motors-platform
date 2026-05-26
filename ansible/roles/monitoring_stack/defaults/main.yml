@@ -1,0 +1,22 @@
+monitoring_stack_name: monitoring
+prometheus_data_dir: /srv/prometheus
+uptime_kuma_data_dir: /srv/uptime-kuma
+alertmanager_data_dir: /srv/alertmanager
+
+alertmanager_route_group_by:
+  - alertname
+  - severity
+  - team
+alertmanager_group_wait: 30s
+alertmanager_group_interval: 5m
+alertmanager_repeat_interval: 4h
+
+alertmanager_webhook_url: ""
+alertmanager_webhook_send_resolved: true
+
+alertmanager_email_to: ""
+alertmanager_email_from: ""
+alertmanager_smtp_smarthost: ""
+alertmanager_smtp_auth_username: ""
+alertmanager_smtp_auth_password: ""
+alertmanager_smtp_require_tls: true

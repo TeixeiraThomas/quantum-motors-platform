@@ -4,6 +4,7 @@
   roles:
     - docker_swarm
     - nfs_storage
+    - backup_ops
 
 - name: Deploy Traefik
   hosts: swarm_managers
@@ -16,6 +17,12 @@
   become: true
   roles:
     - logging_stack
+
+- name: Deploy metrics monitoring and status page
+  hosts: swarm_managers
+  become: true
+  roles:
+    - monitoring_stack
 
 - name: Deploy SonarQube
   hosts: swarm_managers

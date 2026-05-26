@@ -1,0 +1,16 @@
+backup_enabled: true
+backup_root_dir: /srv/backups/quantum-motors
+backup_retain_days: 14
+backup_cron_minute: "15"
+backup_cron_hour: "03"
+
+backup_include_paths:
+  - /srv/nfs/quantum-motors
+  - /srv/loki
+  - /srv/grafana
+  - /srv/prometheus
+  - /srv/uptime-kuma
+  - /srv/alertmanager
+  - /srv/sonarqube
+  - /srv/alloy
+  - /opt/quantum-motors/deploy

@@ -60,13 +60,16 @@
   ansible.builtin.assert:
     that:
       - >-
-        {{
+        (
           (
-            (item.stdout | default('{}') | from_json | default({}, true))
-            | combine(item.item.value)
+            item.stdout | default('{}') | from_json | default({}, true)
           )
-          == (item.stdout | default('{}') | from_json | default({}, true))
-        }}
+          | combine(item.item.value)
+        )
+        ==
+        (
+          item.stdout | default('{}') | from_json | default({}, true)
+        )
     fail_msg: >-
       Missing expected labels on {{ item.item.key }}.
       Expected: {{ item.item.value | to_json }}

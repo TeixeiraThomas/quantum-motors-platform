@@ -47,6 +47,9 @@ const buildModelImageCandidates = (modelId?: string | number) => {
 export function Configure({}) {
   const router = useRouter();
   const { t } = useTranslation(["catalog"]);
+  const modelId = Array.isArray(router.query.model_id)
+    ? router.query.model_id[0]
+    : router.query.model_id;
 
   const configuratorLayoutEl = useRef(null);
 
@@ -64,7 +67,7 @@ export function Configure({}) {
   });
 
   const { data: configureData, isLoading: configureIsLoading } = useConfigure({
-    code: router.query.model_id as string,
+    code: modelId as string,
     choices: selectedChoices,
   });
   const form = useForm<ChoicesConfiguration>({
@@ -76,21 +79,32 @@ export function Configure({}) {
 
   const handleChoicesSelect = useCallback(
     (value: ChoicesConfiguration, name: string) => {
+      const nextChoices: ChoicesConfiguration = { ...(value || {}) };
+
       // Delete previous selected colors on finish and battery changes
       if (name === "finish" || name === "battery") {
-        delete value.color;
+        delete nextChoices.color;
 
         form.setValue("color", "");
       }
 
       // Reset battery on finish selection
       if (name === "finish") {
-        delete value.battery;
+        delete nextChoices.battery;
 
         form.setValue("battery", "");
       }
 
-      setSelectedChoices(value as ChoicesConfiguration);
+      // Remove transient empty values before sending the request payload
+      (Object.keys(nextChoices) as (keyof ChoicesConfiguration)[]).forEach(
+        (choiceKey) => {
+          if (nextChoices[choiceKey] === "") {
+            delete nextChoices[choiceKey];
+          }
+        }
+      );
+
+      setSelectedChoices(nextChoices);
     },
     [form]
   );
@@ -109,7 +123,7 @@ export function Configure({}) {
         }
 
         const selectedItem = data.find(
-          (item: any) => value[property] === item.code
+          (item: any) => String(value[property] ?? "") === String(item.id ?? "")
         );
 
         if (selectedItem?.viewReference?.category) {
@@ -172,8 +186,8 @@ export function Configure({}) {
 
   // Vehicle combination not found
   if (
-    configureData?.status === Status.MODEL_NOT_FOUND ||
-    !router.query.model_id
+    router.isReady &&
+    (configureData?.status === Status.MODEL_NOT_FOUND || !modelId)
   ) {
     return (
       <div

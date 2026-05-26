@@ -5,19 +5,26 @@ docker_packages:
 docker_swarm_daemon_config:
   insecure-registries:
     - "172.16.248.236:5050"
+  dns:
+    - "1.1.1.1"
+    - "8.8.8.8"
 
 swarm_node_labels:
+  vm1:
+    monitoring: "true"
   vm2:
     db-node: "true"
   vm3:
     sonarqube: "true"
     logging: "true"
+    monitoring: "true"
 
 overlay_networks:
   - public
   - preprod_net
   - prod_net
   - logs_net
+  - monitoring_net
 
 nfs_exports_root: /srv/nfs/quantum-motors
 nfs_export_directories:
@@ -52,10 +59,20 @@ logging_stack_name: logging
 loki_data_dir: /srv/loki
 alloy_data_dir: /srv/alloy
 grafana_logs_data_dir: /srv/grafana
+prometheus_data_dir: /srv/prometheus
+uptime_kuma_data_dir: /srv/uptime-kuma
+alertmanager_data_dir: /srv/alertmanager
+
+backup_enabled: true
+backup_root_dir: /srv/backups/quantum-motors
+backup_retain_days: 14
 
 gitlab_external_url: "http://172.16.248.236"
 gitlab_registry_url: "http://172.16.248.236:5050"
 gitlab_runner_registration_token: "{{ vault_gitlab_runner_registration_token | default('') }}"
+
+dockerhub_username: ""
+dockerhub_token: "{{ vault_dockerhub_token | default('') }}"
 
 gitlab_admin_users:
   - username: teixei_t

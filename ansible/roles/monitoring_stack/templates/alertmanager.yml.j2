@@ -1,0 +1,33 @@
+global:
+  resolve_timeout: 5m
+{% if alertmanager_email_to | length > 0 and alertmanager_email_from | length > 0 and alertmanager_smtp_smarthost | length > 0 %}
+  smtp_from: "{{ alertmanager_email_from }}"
+  smtp_smarthost: "{{ alertmanager_smtp_smarthost }}"
+{% if alertmanager_smtp_auth_username | length > 0 %}
+  smtp_auth_username: "{{ alertmanager_smtp_auth_username }}"
+{% endif %}
+{% if alertmanager_smtp_auth_password | length > 0 %}
+  smtp_auth_password: "{{ alertmanager_smtp_auth_password }}"
+{% endif %}
+  smtp_require_tls: {{ alertmanager_smtp_require_tls | bool | lower }}
+{% endif %}
+
+route:
+  receiver: default-receiver
+  group_by: {{ alertmanager_route_group_by | to_json }}
+  group_wait: {{ alertmanager_group_wait }}
+  group_interval: {{ alertmanager_group_interval }}
+  repeat_interval: {{ alertmanager_repeat_interval }}
+
+receivers:
+  - name: default-receiver
+{% if alertmanager_webhook_url | length > 0 %}
+    webhook_configs:
+      - url: "{{ alertmanager_webhook_url }}"
+        send_resolved: {{ alertmanager_webhook_send_resolved | bool | lower }}
+{% endif %}
+{% if alertmanager_email_to | length > 0 and alertmanager_email_from | length > 0 and alertmanager_smtp_smarthost | length > 0 %}
+    email_configs:
+      - to: "{{ alertmanager_email_to }}"
+        send_resolved: true
+{% endif %}

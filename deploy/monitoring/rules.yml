@@ -1,0 +1,73 @@
+groups:
+  - name: quantum-platform-alerts
+    interval: 30s
+    rules:
+      - alert: PrometheusTargetDown
+        expr: up == 0
+        for: 2m
+        labels:
+          severity: critical
+          team: platform
+        annotations:
+          summary: "Target down: {{ $labels.job }} / {{ $labels.instance }}"
+          description: "Prometheus cannot scrape {{ $labels.instance }} (job={{ $labels.job }}) for more than 2 minutes."
+
+      - alert: BlackboxProbeFailed
+        expr: probe_success == 0
+        for: 2m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "Synthetic probe failed: {{ $labels.instance }}"
+          description: "Blackbox probe to {{ $labels.instance }} has failed for more than 2 minutes."
+
+      - alert: FrontLiveDown
+        expr: probe_success{job="blackbox-front-live"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          team: platform
+        annotations:
+          summary: "Front live is down"
+          description: "Synthetic probe for front.quantum.local has been down for more than 2 minutes."
+
+      - alert: ApiLiveDown
+        expr: probe_success{job="blackbox-api-live"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          team: platform
+        annotations:
+          summary: "API live is down"
+          description: "Synthetic probe for api.quantum.local has been down for more than 2 minutes."
+
+      - alert: NodeHighCPU
+        expr: 100 * (1 - avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m]))) > 85
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "High CPU on {{ $labels.instance }}"
+          description: "CPU usage has been above 85% for 10 minutes on {{ $labels.instance }}."
+
+      - alert: NodeHighMemory
+        expr: 100 * (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) > 90
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "High memory on {{ $labels.instance }}"
+          description: "Memory usage has been above 90% for 10 minutes on {{ $labels.instance }}."
+
+      - alert: NodeDiskPressureRoot
+        expr: 100 * (1 - (node_filesystem_avail_bytes{mountpoint="/",fstype!~"tmpfs|overlay"} / node_filesystem_size_bytes{mountpoint="/",fstype!~"tmpfs|overlay"})) > 85
+        for: 15m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "Disk pressure on {{ $labels.instance }}"
+          description: "Root filesystem usage has been above 85% for 15 minutes on {{ $labels.instance }}."

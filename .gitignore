@@ -1,1 +1,3 @@
 VMS & SERVICES.txt
+__pycache__/
+*.pyc

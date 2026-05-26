@@ -34,6 +34,7 @@ flowchart LR
     VM2 --> LogsNet
     VM3 --> PublicNet
     VM3 --> LogsNet
+    VM3 --> MonitoringNet[monitoring_net]
 
     PublicNet --> FrontPreprod[front-preprod]
     PublicNet --> ApiPreprod[api-preprod]
@@ -60,6 +61,11 @@ flowchart LR
     LogsNet --> Alloy3[alloy global]
     LogsNet --> Loki[Loki log server]
     PublicNet --> GrafanaLogs[grafana-logs]
+    MonitoringNet --> Prometheus[prometheus]
+    MonitoringNet --> Alertmanager[alertmanager]
+    MonitoringNet --> NodeExporter[node-exporter global]
+    MonitoringNet --> CAdvisor[cadvisor global]
+    PublicNet --> StatusPage[uptime-kuma]
 ```
 
 ## Repartition des VMs
@@ -68,7 +74,7 @@ flowchart LR
 | --- | --- | --- |
 | `VM1` | Swarm manager | Traefik, runner GitLab, export NFS |
 | `VM2` | Swarm worker | runner GitLab, MariaDB preprod/prod |
-| `VM3` | Swarm worker | SonarQube, Loki, Grafana, runner GitLab |
+| `VM3` | Swarm worker | SonarQube, Loki, Grafana, Prometheus, Alertmanager, Uptime Kuma, runner GitLab |
 | `VM4` | Hors cluster | GitLab CE, registry GitLab |
 
 ## Domaines utilises
@@ -83,6 +89,9 @@ flowchart LR
 - `api.quantum.local`
 - `traefik.quantum.local`
 - `logs.quantum.local`
+- `status.quantum.local`
+- `prometheus.quantum.local`
+- `alerts.quantum.local`
 
 ## Evolutions majeures par rapport a l'etape 0
 
@@ -93,6 +102,9 @@ flowchart LR
 - ajout de `Traefik` pour l'entree HTTP et le blue/green
 - ajout d'un stockage `NFS` pour la persistance MariaDB
 - ajout d'une centralisation des logs via `Loki`, `Grafana` et `Grafana Alloy`
+- ajout d'une supervision metriques via `Prometheus`, `Node Exporter` et `cAdvisor`
+- ajout d'un moteur de routage d'alertes via `Alertmanager`
+- ajout d'une status page non-technique via `Uptime Kuma`
 - ajout des environnements `preprod`, `prod blue` et `prod green`
 
 ## Regles de mise a jour
