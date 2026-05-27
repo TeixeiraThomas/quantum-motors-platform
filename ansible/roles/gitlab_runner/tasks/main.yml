@@ -86,7 +86,7 @@
 - name: Validate shape of rendu runner authentication token (new workflow)
   ansible.builtin.assert:
     that:
-      - gitlab_runner_registration_token is match('^(glrt|glrtr)-[A-Za-z0-9_-]{16,}$')
+      - gitlab_runner_registration_token is match('^(glrt|glrtr)-[A-Za-z0-9._-]{16,}$')
     fail_msg: >-
       Invalid runner authentication token format for rendu GitLab.
       Expected a real token starting with glrt-/glrtr- and a full random suffix.
