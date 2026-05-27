@@ -1,5 +1,7 @@
 workflow:
   rules:
+    - if: '$CI_SERVER_HOST == "rendu-git.etna-alternance.net"'
+      when: never
     - changes:
         - .gitlab-ci.yml
         - ansible/**/*
