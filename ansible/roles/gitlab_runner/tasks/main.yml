@@ -55,6 +55,16 @@
   when: gitlab_runner_requires_registration
   no_log: true
 
+- name: Reject placeholder runner tokens
+  ansible.builtin.assert:
+    that:
+      - gitlab_runner_registration_token is not match('^glrt-(XXXX|YYYY)$')
+      - gitlab_runner_registration_token is not match('^<.*>$')
+    fail_msg: >-
+      Provided gitlab_runner_registration_token looks like a placeholder.
+      Replace it with a real token from GitLab runner UI.
+  when: gitlab_runner_requires_registration
+
 - name: Build runner tag list
   ansible.builtin.set_fact:
     gitlab_runner_effective_tags: >-
@@ -121,13 +131,21 @@
     name: gitlab-runner-register
     image: "{{ gitlab_runner_image }}"
     detach: false
-    auto_remove: true
+    auto_remove: "{{ not (gitlab_runner_debug_registration | bool) }}"
     command: "{{ gitlab_runner_register_command }}"
     volumes:
       - /srv/gitlab-runner:/etc/gitlab-runner
       - /srv/gitlab-runner-cache:/cache
   when: gitlab_runner_requires_registration
-  no_log: true
+  register: gitlab_runner_register_result
+  no_log: "{{ not (gitlab_runner_debug_registration | bool) }}"
+
+- name: Show runner registration output (debug mode)
+  ansible.builtin.debug:
+    var: gitlab_runner_register_result
+  when:
+    - gitlab_runner_requires_registration
+    - gitlab_runner_debug_registration | bool
 
 - name: Run gitlab runner container
   community.docker.docker_container:
