@@ -75,27 +75,29 @@
       Replace it with a real token from GitLab runner UI.
   when: gitlab_runner_requires_registration | bool
 
-- name: Require runner authentication token for rendu GitLab
+- name: Validate shape of rendu runner authentication token (new workflow)
   ansible.builtin.assert:
     that:
-      - gitlab_runner_registration_token is match('^glrt-')
-    fail_msg: >-
-      This GitLab endpoint requires the new runner workflow.
-      Use a runner authentication token (starts with glrt-) created in the GitLab UI.
-  when:
-    - gitlab_runner_requires_registration | bool
-    - "'rendu-git.etna-alternance.net' in gitlab_runner_url"
-
-- name: Validate shape of rendu runner authentication token
-  ansible.builtin.assert:
-    that:
-      - gitlab_runner_registration_token is match('^glrt-[A-Za-z0-9_-]{16,}$')
+      - gitlab_runner_registration_token is match('^(glrt|glrtr)-[A-Za-z0-9_-]{16,}$')
     fail_msg: >-
       Invalid runner authentication token format for rendu GitLab.
-      Expected a real token starting with glrt- and a full random suffix.
+      Expected a real token starting with glrt-/glrtr- and a full random suffix.
   when:
     - gitlab_runner_requires_registration | bool
     - "'rendu-git.etna-alternance.net' in gitlab_runner_url"
+    - gitlab_runner_registration_token is match('^(glrt|glrtr)-')
+
+- name: Validate minimum shape for rendu registration token (legacy workflow)
+  ansible.builtin.assert:
+    that:
+      - gitlab_runner_registration_token | length >= 12
+    fail_msg: >-
+      Provided legacy registration token looks too short.
+      Use a real token generated from GitLab runner UI.
+  when:
+    - gitlab_runner_requires_registration | bool
+    - "'rendu-git.etna-alternance.net' in gitlab_runner_url"
+    - gitlab_runner_registration_token is not match('^(glrt|glrtr)-')
 
 - name: Build runner tag list
   ansible.builtin.set_fact:
@@ -109,8 +111,8 @@
 
 - name: Detect runner token mode
   ansible.builtin.set_fact:
-    gitlab_runner_is_auth_token: "{{ gitlab_runner_registration_token is match('^glrt-') }}"
-    gitlab_runner_token_cli_option: "{{ (gitlab_runner_registration_token is match('^glrt-')) | ternary('--token', '--registration-token') }}"
+    gitlab_runner_is_auth_token: "{{ gitlab_runner_registration_token is match('^(glrt|glrtr)-') }}"
+    gitlab_runner_token_cli_option: "{{ (gitlab_runner_registration_token is match('^(glrt|glrtr)-')) | ternary('--token', '--registration-token') }}"
 
 - name: Build runner register command
   ansible.builtin.set_fact:
