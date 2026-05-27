@@ -65,6 +65,17 @@
       Replace it with a real token from GitLab runner UI.
   when: gitlab_runner_requires_registration
 
+- name: Require runner authentication token for rendu GitLab
+  ansible.builtin.assert:
+    that:
+      - gitlab_runner_registration_token is match('^glrt-')
+    fail_msg: >-
+      This GitLab endpoint requires the new runner workflow.
+      Use a runner authentication token (starts with glrt-) created in the GitLab UI.
+  when:
+    - gitlab_runner_requires_registration
+    - "'rendu-git.etna-alternance.net' in gitlab_runner_url"
+
 - name: Build runner tag list
   ansible.builtin.set_fact:
     gitlab_runner_effective_tags: >-
