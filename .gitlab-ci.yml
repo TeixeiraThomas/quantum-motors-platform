@@ -30,9 +30,8 @@ variables:
   NFS_SERVER: 172.16.248.64
   NFS_EXPORTS_ROOT: /srv/nfs/quantum-motors
 
-default:
-  tags:
-    - docker
+# Do not force a default tag: ETNA shared runners are usually untagged.
+# Deployment jobs keep explicit swarm-manager tags below.
 
 .docker_job:
   image: docker:24.0.7-cli
@@ -172,6 +171,8 @@ deploy_preprod:
     - build_backend
     - build_frontend
   rules:
+    - if: '$CI_SERVER_HOST == "rendu-git.etna-alternance.net"'
+      when: never
     - if: '$CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH == "main"'
   script:
     - export DB_ROOT_PASSWORD="$PREPROD_DB_ROOT_PASSWORD"
@@ -206,6 +207,8 @@ test_preprod:
   needs:
     - deploy_preprod
   rules:
+    - if: '$CI_SERVER_HOST == "rendu-git.etna-alternance.net"'
+      when: never
     - if: '$CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH == "main"'
   script:
     - docker run --rm --network host -i curlimages/curl:8.7.1 sh -s -- "http://127.0.0.1" preprod.quantum.local api-preprod.quantum.local < tests/functional/smoke.sh
@@ -222,6 +225,8 @@ bootstrap_prod_blue:
   when: manual
   allow_failure: true
   rules:
+    - if: '$CI_SERVER_HOST == "rendu-git.etna-alternance.net"'
+      when: never
     - if: '$CI_COMMIT_BRANCH == "main"'
   script:
     - export DB_ROOT_PASSWORD="$PROD_DB_ROOT_PASSWORD"
@@ -261,6 +266,8 @@ deploy_green:
     - build_backend
     - build_frontend
   rules:
+    - if: '$CI_SERVER_HOST == "rendu-git.etna-alternance.net"'
+      when: never
     - if: '$CI_COMMIT_BRANCH == "main"'
   script:
     - export DB_ROOT_PASSWORD="$PROD_DB_ROOT_PASSWORD"
@@ -298,6 +305,8 @@ test_green:
   needs:
     - deploy_green
   rules:
+    - if: '$CI_SERVER_HOST == "rendu-git.etna-alternance.net"'
+      when: never
     - if: '$CI_COMMIT_BRANCH == "main"'
   script:
     - docker run --rm --network host -i curlimages/curl:8.7.1 sh -s -- "http://127.0.0.1" front-green.quantum.local api-green.quantum.local < tests/functional/smoke.sh
@@ -310,6 +319,8 @@ switch_prod:
   needs:
     - test_green
   rules:
+    - if: '$CI_SERVER_HOST == "rendu-git.etna-alternance.net"'
+      when: never
     - if: '$CI_COMMIT_BRANCH == "main"'
   script:
     - export DB_PASSWORD="$PROD_DB_PASSWORD"
