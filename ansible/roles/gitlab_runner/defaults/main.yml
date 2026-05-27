@@ -2,6 +2,7 @@ gitlab_runner_image: gitlab/gitlab-runner:alpine
 gitlab_runner_url: "{{ gitlab_external_url }}"
 gitlab_runner_registration_token: ""
 gitlab_runner_docker_image: docker:24.0.7
+gitlab_runner_force_reregister: false
 gitlab_runner_tags:
   - swarm
   - docker
