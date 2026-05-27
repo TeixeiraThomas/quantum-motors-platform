@@ -63,7 +63,16 @@
       - gitlab_runner_registration_token | default('') | length > 0
     fail_msg: "gitlab_runner_registration_token must be defined before registering a new runner"
   when: gitlab_runner_requires_registration | bool
-  no_log: true
+  no_log: "{{ not (gitlab_runner_debug_registration | bool) }}"
+
+- name: Show runner token metadata (debug mode)
+  ansible.builtin.debug:
+    msg:
+      token_length: "{{ (gitlab_runner_registration_token | default('')) | length }}"
+      token_mode: "{{ (gitlab_runner_registration_token | default('')) is match('^(glrt|glrtr)-') | ternary('auth-token', 'legacy-token') }}"
+  when:
+    - gitlab_runner_requires_registration | bool
+    - gitlab_runner_debug_registration | bool
 
 - name: Reject placeholder runner tokens
   ansible.builtin.assert:
