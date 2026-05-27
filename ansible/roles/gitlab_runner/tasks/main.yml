@@ -65,6 +65,41 @@
         ) | unique
       }}
 
+- name: Detect runner token mode
+  ansible.builtin.set_fact:
+    gitlab_runner_is_auth_token: "{{ gitlab_runner_registration_token is match('^glrt-') }}"
+    gitlab_runner_token_cli_option: "{{ (gitlab_runner_registration_token is match('^glrt-')) | ternary('--token', '--registration-token') }}"
+
+- name: Build runner register command
+  ansible.builtin.set_fact:
+    gitlab_runner_register_command: >-
+      {{
+        [
+          'register',
+          '--non-interactive',
+          '--url', gitlab_runner_url,
+          gitlab_runner_token_cli_option, gitlab_runner_registration_token,
+          '--executor', 'docker',
+          '--docker-image', gitlab_runner_docker_image,
+          '--description', inventory_hostname ~ '-runner'
+        ]
+        + (
+          (not gitlab_runner_is_auth_token) | ternary(
+            [
+              '--tag-list', (gitlab_runner_effective_tags | join(',')),
+              '--run-untagged=true',
+              '--locked=false'
+            ],
+            []
+          )
+        )
+        + [
+          '--docker-privileged=true',
+          '--docker-volumes', '/var/run/docker.sock:/var/run/docker.sock',
+          '--docker-volumes', '/cache'
+        ]
+      }}
+
 - name: Stop runner container before re-registration
   community.docker.docker_container:
     name: gitlab-runner
@@ -87,28 +122,7 @@
     image: "{{ gitlab_runner_image }}"
     detach: false
     auto_remove: true
-    command:
-      - register
-      - --non-interactive
-      - --url
-      - "{{ gitlab_runner_url }}"
-      - --registration-token
-      - "{{ gitlab_runner_registration_token }}"
-      - --executor
-      - docker
-      - --docker-image
-      - "{{ gitlab_runner_docker_image }}"
-      - --description
-      - "{{ inventory_hostname }}-runner"
-      - --tag-list
-      - "{{ gitlab_runner_effective_tags | join(',') }}"
-      - --run-untagged=true
-      - --locked=false
-      - --docker-privileged=true
-      - --docker-volumes
-      - /var/run/docker.sock:/var/run/docker.sock
-      - --docker-volumes
-      - /cache
+    command: "{{ gitlab_runner_register_command }}"
     volumes:
       - /srv/gitlab-runner:/etc/gitlab-runner
       - /srv/gitlab-runner-cache:/cache
