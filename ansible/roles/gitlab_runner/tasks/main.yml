@@ -27,7 +27,7 @@
       {{
         (
           (gitlab_runner_config_raw.content | b64decode)
-          | regex_findall('(?m)^\\s*url\\s*=\\s*"([^"]+)"')
+          | regex_findall('(?m)^\s*url\s*=\s*"([^"]+)"')
           | first
           | default('')
         )
@@ -47,23 +47,33 @@
         )
       }}
 
+- name: Show runner registration decision (debug mode)
+  ansible.builtin.debug:
+    msg:
+      config_exists: "{{ gitlab_runner_config.stat.exists }}"
+      current_url: "{{ gitlab_runner_current_url | default('') }}"
+      target_url: "{{ gitlab_runner_url }}"
+      force_reregister: "{{ gitlab_runner_force_reregister | bool }}"
+      requires_registration: "{{ gitlab_runner_requires_registration }}"
+  when: gitlab_runner_debug_registration | bool
+
 - name: Ensure GitLab Runner registration token is defined when registration is required
   ansible.builtin.assert:
     that:
       - gitlab_runner_registration_token | default('') | length > 0
     fail_msg: "gitlab_runner_registration_token must be defined before registering a new runner"
-  when: gitlab_runner_requires_registration
+  when: gitlab_runner_requires_registration | bool
   no_log: true
 
 - name: Reject placeholder runner tokens
   ansible.builtin.assert:
     that:
-      - gitlab_runner_registration_token is not match('^glrt-(XXXX|YYYY)$')
       - gitlab_runner_registration_token is not match('^<.*>$')
+      - gitlab_runner_registration_token is not match('(?i).*(XXXX|YYYY|REAL|TOKEN|PLACEHOLDER|CHANGE[_-]?ME).*')
     fail_msg: >-
       Provided gitlab_runner_registration_token looks like a placeholder.
       Replace it with a real token from GitLab runner UI.
-  when: gitlab_runner_requires_registration
+  when: gitlab_runner_requires_registration | bool
 
 - name: Require runner authentication token for rendu GitLab
   ansible.builtin.assert:
@@ -73,7 +83,18 @@
       This GitLab endpoint requires the new runner workflow.
       Use a runner authentication token (starts with glrt-) created in the GitLab UI.
   when:
-    - gitlab_runner_requires_registration
+    - gitlab_runner_requires_registration | bool
+    - "'rendu-git.etna-alternance.net' in gitlab_runner_url"
+
+- name: Validate shape of rendu runner authentication token
+  ansible.builtin.assert:
+    that:
+      - gitlab_runner_registration_token is match('^glrt-[A-Za-z0-9_-]{16,}$')
+    fail_msg: >-
+      Invalid runner authentication token format for rendu GitLab.
+      Expected a real token starting with glrt- and a full random suffix.
+  when:
+    - gitlab_runner_requires_registration | bool
     - "'rendu-git.etna-alternance.net' in gitlab_runner_url"
 
 - name: Build runner tag list
@@ -126,7 +147,7 @@
     name: gitlab-runner
     state: stopped
   when:
-    - gitlab_runner_requires_registration
+    - gitlab_runner_requires_registration | bool
     - gitlab_runner_config.stat.exists
 
 - name: Remove previous runner config before re-registration
@@ -134,7 +155,7 @@
     path: /srv/gitlab-runner/config.toml
     state: absent
   when:
-    - gitlab_runner_requires_registration
+    - gitlab_runner_requires_registration | bool
     - gitlab_runner_config.stat.exists
 
 - name: Register runner using a one-shot container
@@ -147,7 +168,7 @@
     volumes:
       - /srv/gitlab-runner:/etc/gitlab-runner
       - /srv/gitlab-runner-cache:/cache
-  when: gitlab_runner_requires_registration
+  when: gitlab_runner_requires_registration | bool
   register: gitlab_runner_register_result
   no_log: "{{ not (gitlab_runner_debug_registration | bool) }}"
 
@@ -155,7 +176,7 @@
   ansible.builtin.debug:
     var: gitlab_runner_register_result
   when:
-    - gitlab_runner_requires_registration
+    - gitlab_runner_requires_registration | bool
     - gitlab_runner_debug_registration | bool
 
 - name: Run gitlab runner container
