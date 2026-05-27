@@ -49,9 +49,20 @@ default:
 .docker_host_job:
   image: docker:24.0.7-cli
 
+.retryable_test_job:
+  retry:
+    max: 2
+    when:
+      - runner_system_failure
+      - stuck_or_timeout_failure
+      - api_failure
+      - scheduler_failure
+      - unknown_failure
+
 test_backend:
   stage: test
   image: node:20-bookworm-slim
+  extends: .retryable_test_job
   services:
     - name: mariadb:11
       alias: mysql
@@ -60,10 +71,25 @@ test_backend:
         MARIADB_DATABASE: quantum_motors
   script:
     - cd clo5-backend-master
-    - apt-get update
-    - apt-get install -y --no-install-recommends openssl
-    - corepack enable
-    - yarn install --immutable
+    - |
+      retry_cmd() {
+        max_attempts="$1"
+        shift
+        attempt=1
+        until "$@"; do
+          if [ "$attempt" -ge "$max_attempts" ]; then
+            echo "Command failed after ${attempt} attempts: $*"
+            return 1
+          fi
+          echo "Retrying (${attempt}/${max_attempts}): $*"
+          attempt=$((attempt + 1))
+          sleep 5
+        done
+      }
+      retry_cmd 3 apt-get update
+      retry_cmd 3 apt-get install -y --no-install-recommends openssl
+      retry_cmd 3 corepack enable
+      retry_cmd 3 yarn install --immutable
     - cp .env.test.example .env.test
     - sed -i 's|mysql://quantum:quantum@127.0.0.1:3306/quantum_motors_test|mysql://root:root@mysql:3306/quantum_motors|' .env.test
     - yarn test
@@ -71,19 +97,51 @@ test_backend:
 lint_backend:
   stage: test
   image: node:20-bookworm-slim
+  extends: .retryable_test_job
   script:
     - cd clo5-backend-master
-    - corepack enable
-    - yarn install --immutable
+    - |
+      retry_cmd() {
+        max_attempts="$1"
+        shift
+        attempt=1
+        until "$@"; do
+          if [ "$attempt" -ge "$max_attempts" ]; then
+            echo "Command failed after ${attempt} attempts: $*"
+            return 1
+          fi
+          echo "Retrying (${attempt}/${max_attempts}): $*"
+          attempt=$((attempt + 1))
+          sleep 5
+        done
+      }
+      retry_cmd 3 corepack enable
+      retry_cmd 3 yarn install --immutable
     - yarn lint
 
 lint_front:
   stage: test
   image: node:18-bookworm-slim
+  extends: .retryable_test_job
   script:
     - cd clo5-front-main
-    - corepack enable
-    - yarn install --frozen-lockfile
+    - |
+      retry_cmd() {
+        max_attempts="$1"
+        shift
+        attempt=1
+        until "$@"; do
+          if [ "$attempt" -ge "$max_attempts" ]; then
+            echo "Command failed after ${attempt} attempts: $*"
+            return 1
+          fi
+          echo "Retrying (${attempt}/${max_attempts}): $*"
+          attempt=$((attempt + 1))
+          sleep 5
+        done
+      }
+      retry_cmd 3 corepack enable
+      retry_cmd 3 yarn install --frozen-lockfile
     - yarn lint
 
 build_backend:
