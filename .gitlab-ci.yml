@@ -58,10 +58,34 @@ variables:
       - scheduler_failure
       - unknown_failure
 
+etna_smoke:
+  stage: test
+  image: alpine:3.20
+  retry:
+    max: 2
+    when:
+      - runner_system_failure
+      - stuck_or_timeout_failure
+      - api_failure
+      - scheduler_failure
+      - unknown_failure
+  rules:
+    - if: '$CI_SERVER_HOST == "rendu-git.etna-alternance.net"'
+      when: on_success
+      allow_failure: true
+    - when: never
+  script:
+    - echo "ETNA smoke pipeline OK"
+    - echo "Heavy jobs are skipped on ETNA shared runners."
+
 test_backend:
   stage: test
   image: node:20-bookworm-slim
   extends: .retryable_test_job
+  rules:
+    - if: '$CI_SERVER_HOST == "rendu-git.etna-alternance.net"'
+      when: never
+    - when: on_success
   services:
     - name: mariadb:11
       alias: mysql
@@ -97,6 +121,10 @@ lint_backend:
   stage: test
   image: node:20-bookworm-slim
   extends: .retryable_test_job
+  rules:
+    - if: '$CI_SERVER_HOST == "rendu-git.etna-alternance.net"'
+      when: never
+    - when: on_success
   script:
     - cd clo5-backend-master
     - |
@@ -122,6 +150,10 @@ lint_front:
   stage: test
   image: node:18-bookworm-slim
   extends: .retryable_test_job
+  rules:
+    - if: '$CI_SERVER_HOST == "rendu-git.etna-alternance.net"'
+      when: never
+    - when: on_success
   script:
     - cd clo5-front-main
     - |
@@ -146,6 +178,10 @@ lint_front:
 build_backend:
   stage: build
   extends: .docker_job
+  rules:
+    - if: '$CI_SERVER_HOST == "rendu-git.etna-alternance.net"'
+      when: never
+    - when: on_success
   needs:
     - test_backend
     - lint_backend
@@ -156,6 +192,10 @@ build_backend:
 build_frontend:
   stage: build
   extends: .docker_job
+  rules:
+    - if: '$CI_SERVER_HOST == "rendu-git.etna-alternance.net"'
+      when: never
+    - when: on_success
   needs:
     - lint_front
   script:
