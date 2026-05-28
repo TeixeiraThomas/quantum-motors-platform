@@ -1,6 +1,18 @@
 # SPE-CLO5 / Quantum Motors - Partie 2
 
-Document date du `2026-05-26`.
+Document date du `2026-05-28`.
+
+## 0. Priorite metier (avant tout)
+
+La priorite fonctionnelle de la plateforme Quantum Motors est:
+
+1. commander un vehicule dans differents points de vente
+2. gerer et sauvegarder les configurations utilisateur dans un compte
+3. permettre aux entreprises de gerer leur flotte de vehicules
+4. planifier les entretiens
+5. connecter les formulaires et commandes au CRM Quantum Motors
+
+La proposition microservices ci-dessous est organisee en premier lieu pour couvrir ces 5 besoins metier, puis pour repondre aux contraintes de disponibilite, scalabilite, performance, fiabilite et securite.
 
 ## 1. Architecture existante et limites
 
@@ -55,7 +67,17 @@ Le decoupage cible est oriente "bounded contexts" metier.
 10. `notification-service`
 - emails/SMS/webhooks (commande, entretien, comptes, incident client)
 
-### 2.2 Vue cible (logique)
+### 2.2 Mapping explicite des besoins metier vers les services
+
+| Besoin metier prioritaire | Services principaux | Integrations | Donnees maitrisees |
+| --- | --- | --- | --- |
+| Commander un vehicule en point de vente | `order-service`, `payment-service`, `catalog-service`, `identity-service` | CRM, PSP, notifications | panier, commande, statut paiement, point de vente, historique |
+| Sauvegarder les configurations utilisateur | `configurator-service`, `configuration-library-service`, `identity-service` | notifications | configuration, revisions, favoris, partage |
+| Gerer une flotte entreprise | `fleet-service`, `order-service`, `identity-service` | CRM, notifications | parc vehicules, affectations, droits B2B, contrats internes |
+| Planifier les entretiens | `maintenance-service`, `fleet-service`, `notification-service` | CRM, agenda externe (option) | plans d'entretien, rappels, historique interventions |
+| Connecter les formulaires/commandes au CRM | `crm-integration-service`, `order-service`, `identity-service` | CRM Quantum Motors | leads, contacts, synchro commandes, traces d'echange |
+
+### 2.3 Vue cible (logique)
 
 ```mermaid
 flowchart LR
@@ -85,13 +107,30 @@ flowchart LR
     EVT --- NTF
 ```
 
-### 2.3 Principes d'implementation
+### 2.4 Principes d'implementation
 
 - `Database per service`: chaque service possede son schema et ses migrations
 - `API Gateway`: point d'entree unique (authN/authZ, rate limiting, observabilite)
 - `Communication synchrone`: HTTP/gRPC pour lecture et commande immediate
 - `Communication asynchrone`: bus d'evenements pour workflows inter-domaines
 - `Strangler Pattern`: migration progressive depuis le backend actuel
+
+### 2.5 Parcours fonctionnels cibles (end-to-end)
+
+1. Parcours "commande vehicule":
+- utilisateur authentifie -> configurateur -> panier -> paiement -> creation commande -> sync CRM -> notification client
+
+2. Parcours "sauvegarde configuration":
+- utilisateur authentifie -> creation configuration -> sauvegarde bibliotheque -> reprise/modification -> partage optionnel
+
+3. Parcours "flotte entreprise":
+- admin entreprise -> creation parc -> ajout vehicules -> affectation conducteurs -> suivi statut vehicules
+
+4. Parcours "entretien":
+- vehicule actif -> calcul echeance entretien -> creation tache -> rappel automatique -> cloture intervention
+
+5. Parcours "CRM":
+- formulaire contact ou commande -> publication evenement -> transformation -> envoi CRM -> accuse de reception -> reprise sur erreur
 
 ## 3. Reponse aux contraintes du sujet
 
@@ -123,7 +162,36 @@ flowchart LR
 - segmentation reseau inter-services et principe du moindre privilege
 - journal d'audit sur actions sensibles (commande, donnees perso, flotte)
 
-## 4. Mapping cible sur le cluster actuel (phase de transition)
+## 4. Plan de livraison priorise (roadmap metier)
+
+### Lot A - valeur immediate (MVP plateforme)
+
+1. `identity-service`
+2. `catalog-service`
+3. `configurator-service`
+4. `configuration-library-service`
+5. `order-service`
+6. `crm-integration-service` (flux minimal commande + contact)
+
+Objectif: couvrir commande + sauvegarde configuration + CRM minimum.
+
+### Lot B - extension business B2B
+
+1. `fleet-service`
+2. extension `crm-integration-service` pour process entreprise
+3. dashboards metier dedies B2B
+
+Objectif: gestion flotte entreprise exploitable.
+
+### Lot C - excellence operationnelle
+
+1. `maintenance-service`
+2. `notification-service`
+3. alerting metier SLO/SLA
+
+Objectif: planification entretien et fiabilite long terme.
+
+## 5. Mapping cible sur le cluster actuel (phase de transition)
 
 Sur les 4 VMs actuelles, la cible est atteinte par etapes:
 
@@ -137,7 +205,7 @@ Sur les 4 VMs actuelles, la cible est atteinte par etapes:
 
 Ce mode reduit le risque de rupture tout en restant compatible avec la contrainte de temps/ressources du module.
 
-## 5. Monitoring et tableaux de bord (Partie 2)
+## 6. Monitoring et tableaux de bord (Partie 2)
 
 La plateforme deployee inclut:
 
