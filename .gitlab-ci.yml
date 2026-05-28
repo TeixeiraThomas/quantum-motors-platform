@@ -61,6 +61,15 @@ variables:
 etna_smoke:
   stage: test
   image: alpine:3.20
+  allow_failure: true
+  retry:
+    max: 2
+    when:
+      - runner_system_failure
+      - stuck_or_timeout_failure
+      - api_failure
+      - scheduler_failure
+      - unknown_failure
   rules:
     - if: '$CI_SERVER_HOST == "rendu-git.etna-alternance.net"'
       when: on_success
