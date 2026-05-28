@@ -1,6 +1,6 @@
 # SPE-CLO5 / Quantum Motors
 
-Ce depot contient l'infrastructure, les applications et la documentation du projet `Quantum Motors`.
+Ce depot contient l'infrastructure, les applications et la documentation du projet `Quantum Motors`;
 
 ## Documentation
 
