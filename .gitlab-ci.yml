@@ -1,5 +1,7 @@
 workflow:
   rules:
+    - if: '$CI_SERVER_HOST == "rendu-git.etna-alternance.net"'
+      when: never
     - changes:
         - .gitlab-ci.yml
         - ansible/**/*
@@ -30,9 +32,6 @@ variables:
   NFS_SERVER: 172.16.248.64
   NFS_EXPORTS_ROOT: /srv/nfs/quantum-motors
 
-# Do not force a default tag: ETNA shared runners are usually untagged.
-# Deployment jobs keep explicit swarm-manager tags below.
-
 .docker_job:
   image: docker:24.0.7-cli
   before_script:
@@ -57,26 +56,6 @@ variables:
       - api_failure
       - scheduler_failure
       - unknown_failure
-
-etna_smoke:
-  stage: test
-  image: alpine:3.20
-  retry:
-    max: 2
-    when:
-      - runner_system_failure
-      - stuck_or_timeout_failure
-      - api_failure
-      - scheduler_failure
-      - unknown_failure
-  rules:
-    - if: '$CI_SERVER_HOST == "rendu-git.etna-alternance.net"'
-      when: on_success
-      allow_failure: true
-    - when: never
-  script:
-    - echo "ETNA smoke pipeline OK"
-    - echo "Heavy jobs are skipped on ETNA shared runners."
 
 test_backend:
   stage: test
