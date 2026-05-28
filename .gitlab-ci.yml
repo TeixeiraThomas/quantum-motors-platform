@@ -72,7 +72,7 @@ etna_smoke:
       - unknown_failure
   rules:
     - if: '$CI_SERVER_HOST == "rendu-git.etna-alternance.net"'
-      when: on_success
+      when: manual
     - when: never
   script:
     - echo "ETNA CI reachable"
