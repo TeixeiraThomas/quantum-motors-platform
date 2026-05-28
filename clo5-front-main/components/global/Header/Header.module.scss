@@ -46,6 +46,40 @@
     height: var(--header--height);
   }
 
+  &__nav {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  &__nav-link {
+    min-height: 3.4rem;
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid rgb(255 255 255 / 18%);
+    border-radius: 99rem;
+    padding: 0.55rem 1rem;
+    color: inherit;
+    font-size: var(--font-size--sm);
+    font-weight: 700;
+    text-decoration: none;
+    transition: var(--background-color--fast), var(--border-color--fast);
+
+    &:hover {
+      background: rgb(255 255 255 / 14%);
+      border-color: rgb(255 255 255 / 35%);
+    }
+  }
+
+  &[data-color-mode="white"] &__nav-link {
+    border-color: #d8dfe8;
+
+    &:hover {
+      background: #fff;
+      border-color: #b8c1cf;
+    }
+  }
+
   &__brand {
     display: block;
     width: 9.2rem;
@@ -97,6 +131,12 @@
 
     &__brand {
       width: 7.2rem;
+    }
+
+    &__nav-link {
+      min-height: 3.1rem;
+      padding: 0.45rem 0.75rem;
+      font-size: var(--font-size--xs);
     }
 
     &__lang-switcher {

@@ -6,28 +6,128 @@ generator client {
   binaryTargets = ["native", "debian-openssl-3.0.x", "rhel-openssl-1.0.x"]
 }
 
-
 datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
 model Car {
-  id        Int       @id @default(autoincrement())
-  code      String    @unique
-  model     Model     @relation(fields: [modelId], references: [id])
+  id        Int     @id @default(autoincrement())
+  code      String  @unique
+  model     Model   @relation(fields: [modelId], references: [id])
   modelId   Int
-  finish    Finish    @relation(fields: [finishId], references: [id])
+  finish    Finish  @relation(fields: [finishId], references: [id])
   finishId  Int
-  battery   Battery   @relation(fields: [batteryId], references: [id])
+  battery   Battery @relation(fields: [batteryId], references: [id])
   batteryId Int
+
   @@unique([modelId, finishId, batteryId])
 }
 
+model SavedConfiguration {
+  id                      Int                      @id @default(autoincrement())
+  customerName            String
+  customerEmail           String
+  country                 String                   @default("France")
+  locale                  String                   @default("fr-FR")
+  modelName               String
+  finishName              String?
+  batteryName             String?
+  colorName               String?
+  totalPrice              Float                    @default(0)
+  notes                   String?                  @db.Text
+  orders                  VehicleOrder[]
+  maintenanceAppointments MaintenanceAppointment[]
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+
+  @@index([customerEmail])
+}
+
+model VehicleOrder {
+  id              Int                 @id @default(autoincrement())
+  reference       String              @unique
+  status          OrderStatus         @default(RECEIVED)
+  customerName    String
+  customerEmail   String
+  customerPhone   String?
+  country         String
+  pointOfSale     String
+  vehicleModel    String
+  totalPrice      Float               @default(0)
+  configuration   SavedConfiguration? @relation(fields: [configurationId], references: [id], onDelete: SetNull)
+  configurationId Int?
+  crmLead         CrmLead?            @relation(fields: [crmLeadId], references: [id], onDelete: SetNull)
+  crmLeadId       Int?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@index([customerEmail])
+  @@index([status])
+}
+
+model BusinessFleetVehicle {
+  id                      Int                      @id @default(autoincrement())
+  companyName             String
+  contactName             String
+  contactEmail            String
+  country                 String                   @default("France")
+  vehicleLabel            String
+  vin                     String?
+  licensePlate            String?
+  status                  FleetVehicleStatus       @default(ACTIVE)
+  maintenanceAppointments MaintenanceAppointment[]
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+
+  @@index([companyName])
+  @@index([contactEmail])
+}
+
+model MaintenanceAppointment {
+  id              Int                   @id @default(autoincrement())
+  customerName    String?
+  customerEmail   String
+  vehicleLabel    String
+  serviceCenter   String
+  appointmentDate DateTime
+  serviceType     MaintenanceType       @default(REVISION)
+  status          MaintenanceStatus     @default(PLANNED)
+  notes           String?               @db.Text
+  configuration   SavedConfiguration?   @relation(fields: [configurationId], references: [id], onDelete: SetNull)
+  configurationId Int?
+  fleetVehicle    BusinessFleetVehicle? @relation(fields: [fleetVehicleId], references: [id], onDelete: SetNull)
+  fleetVehicleId  Int?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+
+  @@index([customerEmail])
+  @@index([appointmentDate])
+}
+
+model CrmLead {
+  id              Int            @id @default(autoincrement())
+  source          CrmSource      @default(CONTACT_FORM)
+  status          CrmLeadStatus  @default(NEW)
+  fullName        String
+  email           String
+  phone           String?
+  company         String?
+  topic           String
+  message         String         @db.Text
+  vehicleInterest String?
+  orders          VehicleOrder[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([email])
+  @@index([status])
+}
+
 model Model {
-  id          Int       @id @default(autoincrement())
+  id          Int      @id @default(autoincrement())
   name        String
-  description String    @db.Text
+  description String   @db.Text
   price       Float
   finishes    Finish[]
   type        Type
@@ -38,7 +138,7 @@ model Finish {
   id          Int       @id @default(autoincrement())
   name        String
   description String    @db.Text
-  batteries   Battery[] 
+  batteries   Battery[]
   price       Float
   colors      Color[]
   models      Model[]
@@ -62,7 +162,7 @@ model Color {
   name        String
   description String   @db.Text
   price       Float
-  hexa        String  @default("000000")
+  hexa        String   @default("000000")
   finishes    Finish[]
 }
 
@@ -70,4 +170,44 @@ enum Type {
   SEDAN
   SUV
   HATCH
+}
+
+enum OrderStatus {
+  RECEIVED
+  CRM_SYNCED
+  CONFIRMED
+  DELIVERED
+  CANCELLED
+}
+
+enum FleetVehicleStatus {
+  ACTIVE
+  MAINTENANCE
+  RETIRED
+}
+
+enum MaintenanceType {
+  REVISION
+  REPAIR
+  TIRE_CHANGE
+  SOFTWARE_UPDATE
+}
+
+enum MaintenanceStatus {
+  PLANNED
+  DONE
+  CANCELLED
+}
+
+enum CrmSource {
+  CONTACT_FORM
+  ORDER
+  TEST_DRIVE
+}
+
+enum CrmLeadStatus {
+  NEW
+  SENT_TO_CRM
+  QUALIFIED
+  CLOSED
 }

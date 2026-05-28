@@ -9,6 +9,7 @@ import { CarRouter } from "./Router/CarRouter";
 import { ColorRouter } from "./Router/ColorRouter";
 import { FinishRouter } from "./Router/FinishRouter";
 import { ModelRouter } from "./Router/ModelRouter";
+import { PlatformRouter } from "./Router/PlatformRouter";
 import { ServiceRouter } from "./Router/ServiceRouter";
 import { logError, logInfo } from "./Utils/logger";
 
@@ -73,6 +74,7 @@ async function startServer() {
   app.use(BatteryRouter.init());
   app.use(ColorRouter.init());
   app.use(CarRouter.init());
+  app.use(PlatformRouter.init());
   app.use(ServiceRouter.init());
 
   try {

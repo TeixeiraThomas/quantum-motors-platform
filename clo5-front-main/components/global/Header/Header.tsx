@@ -49,6 +49,22 @@ const Header = ({ colorMode, className }: Props) => {
         </div>
 
         <div className={`${styles["app-header__right-content"]}`}>
+          {hasHydrated && (
+            <nav className={`${styles["app-header__nav"]}`}>
+              <Link
+                className={`${styles["app-header__nav-link"]}`}
+                href="/platform"
+              >
+                Plateforme
+              </Link>
+              <Link
+                className={`${styles["app-header__nav-link"]}`}
+                href="/configure?model_id=1"
+              >
+                Configurer
+              </Link>
+            </nav>
+          )}
           {Array.isArray(router.locales) && router.locales.length > 1 ? (
             <ul
               className={`${styles["app-header__lang-switcher"]} list-unstyled`}
