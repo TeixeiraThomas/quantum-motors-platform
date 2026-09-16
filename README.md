@@ -1,22 +1,37 @@
 # Quantum Motors Platform
 
-A complete infrastructure and application platform for the Quantum Motors project. The repository brings together the web applications, deployment automation, observability stack and the technical documentation required to operate the platform.
+A full-stack and infrastructure platform for the Quantum Motors project. The repository brings together the web applications, deployment automation, infrastructure-as-code, observability stack and operational documentation needed to run the platform.
 
-## Repository Overview
+## Platform Architecture
 
-- `ansible/`: infrastructure inventories, playbooks and roles
+```mermaid
+flowchart TB
+    USERS[Users] --> TRAEFIK[Traefik ingress]
+    TRAEFIK --> FRONT[Next.js frontend]
+    FRONT --> API[Node.js API]
+    API --> DB[(MariaDB)]
+    API --> REGISTRY[Container registry]
+    ANSIBLE[Ansible automation] --> SWARM[Docker Swarm]
+    SWARM --> TRAEFIK
+    SWARM --> FRONT
+    SWARM --> API
+    SWARM --> DB
+    CI[GitLab CI/CD] --> REGISTRY
+    CI --> SWARM
+    MON[Monitoring and logging] --> SWARM
+```
+
+## Repository Map
+
+- `ansible/`: inventories, playbooks and reusable infrastructure roles
 - `clo5-backend-master/`: Node.js API with Prisma and database integration
 - `clo5-front-main/`: Next.js frontend
-- `deploy/`: Docker Swarm deployment manifests for pre-production and blue/green production environments
-- `docker/`: local database initialization assets
+- `deploy/`: pre-production, production blue/green, database, Traefik, logging and monitoring manifests
+- `docker/`: local MariaDB initialization assets
 - `docs/`: architecture, procedures, CI/CD and operations runbooks
 - `tests/`: functional and smoke-test tooling
 
-## Architecture
-
-The documented target architecture uses Docker Swarm, Traefik, MariaDB, GitLab CI/CD, a container registry and an observability layer built around monitoring and centralized logging. The deployment model separates application workloads, data services, CI runners and platform services.
-
-## Local Stack
+## Local Development
 
 Requirements: Docker and Docker Compose.
 
@@ -37,12 +52,19 @@ docker compose down
 
 ## Infrastructure Workflow
 
-Ansible procedures, Vault setup, CI/CD configuration, monitoring and production runbooks are documented in `docs/`. Read the prerequisite and security procedures before running any playbook against a real environment.
+The `docs/` directory is the operational entry point. Start with the prerequisite and Vault procedures, then review the deployment, monitoring, backup and CI/CD runbooks before using Ansible against an environment.
 
 ## Configuration and Security
 
-Copy the provided example environment files and supply secrets through a secure local mechanism. Real `.env` files, credentials, Vault passwords, private keys and production configuration must never be committed.
+Use the example environment files as templates and inject secrets through a secure local or CI/CD mechanism. Real `.env` files, credentials, Vault passwords, private keys and production configuration must never be committed.
+
+## Documentation Highlights
+
+- `docs/etape-0bis-documentation-technique.md`: current technical documentation
+- `docs/etape-2-architecture-microservices.md`: service architecture proposal
+- `docs/etape-2-sre-excellence.md`: reliability and operations practices
+- `docs/SOUTENANCE-PARTIE2-RUNBOOK.md`: presentation and validation runbook
 
 ## Status
 
-Academic infrastructure and full-stack engineering project developed as part of the ETNA curriculum.
+Academic full-stack, infrastructure and SRE project developed as part of the ETNA curriculum.
